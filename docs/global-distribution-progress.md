@@ -19,11 +19,11 @@ This document is the canonical progress record for LifeToLife's global distribut
 |---|---|---|---|---|---|
 | WordPress.com | `lifetolifeglobal.wordpress.com` | Open | ChatGPT connector + OAuth 2.1 / PKCE + WordPress.com MCP operational | **Verified** | Production token refresh / secret storage integration |
 | Pinterest | LifeToLife | Open | Trial API access requested | **Pending approval** | Wait for Trial access approval, then verify actual pin creation |
-| Bluesky | `@lifetolife-net.bsky.social` | Open | App Password + AT Protocol API operational | **Verified** | Consider moving handle to `@lifetolife.net`; integrate into Distribution Agent |
+| Bluesky | `@lifetolife-net.bsky.social` | Open | App Password + AT Protocol API operational | **Verified** | Integrate into Distribution Agent; consider moving handle to `@lifetolife.net` |
 | Blogger | LifeToLife / `lifetolife-net` | Open | Blogger API + Desktop OAuth operational | **Verified** | Integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
-| Facebook | Page: `Life to Life` | Open | Meta Developer App `LifeToLife Distribution`; Page Access Token path operational; Graph API post creation and persistent re-read verified | **Verified** | Integrate into Distribution Agent; clean up verification post |
-| Instagram | `@lifetolife_net` | Business account; connected to LifeToLife portfolio | Instagram Graph API publishing operational; `instagram_basic` + `instagram_content_publish` and Page permissions connected | **Verified** | Integrate into Distribution Agent |
-| Threads | `@lifetolife_net` | Open | Threads API OAuth + publishing operational; callback endpoints hosted on Cloudflare Worker | **Verified** | Integrate into Distribution Agent; move token handling to secret storage |
+| Facebook | Page: `Life to Life` | Open | Meta common Distribution Agent operational; Page Access Token stored as Worker secret; Graph API post creation and persistent re-read verified | **Verified + Agent integrated** | Operate through Distribution Agent; clean up verification posts when convenient |
+| Instagram | `@lifetolife_net` | Business account; connected to LifeToLife portfolio | Meta common Distribution Agent operational; Instagram Graph API image publishing + persistent re-read verified | **Verified + Agent integrated** | Operate through Distribution Agent |
+| Threads | `@lifetolife_net` | Open | Meta common Distribution Agent operational; Threads OAuth token stored as Worker secret; publishing + persistent re-read verified | **Verified + Agent integrated** | Operate through Distribution Agent |
 | YouTube | `@lifetolife_net` | Open | YouTube Data API v3 + OAuth operational; persistent private upload verified through API and YouTube Studio | **Verified** | Integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
 
 ## Verified channels
@@ -99,7 +99,7 @@ Conclusion: YouTube's persistent private API upload path is verified and is read
 
 ### 5. Facebook
 
-Facebook Page automated publishing was verified on 2026-08-14.
+Facebook Page automated publishing was verified on 2026-08-14 and integrated into the common Distribution Agent on 2026-08-15 KST.
 
 - Meta Business Portfolio: `LifeToLife`
 - Meta Developer App: `LifeToLife Distribution`
@@ -109,32 +109,38 @@ Facebook Page automated publishing was verified on 2026-08-14.
 - `GET /me/accounts` unexpectedly returned an empty `data` array, so Page discovery through that route was not usable in this session.
 - The working fallback was direct Page lookup using the known Page ID with `?fields=name,access_token`, which returned the Page Access Token.
 - The Page Access Token was validated with `GET /me?fields=id,name`, which resolved to `Life to Life` / `1179071821966202` rather than the personal user.
-- Publishing: verified through `POST /1179071821966202/feed`.
-- Test post text: `LifeToLife Facebook auto-publishing test`.
-- Returned post ID: `1179071821966202_122101542843437192`.
-- Persistence verification: `GET /1179071821966202_122101542843437192?fields=id,message,permalink_url` returned the same post ID, the original message, and a Facebook permalink.
+- Initial standalone publishing: verified through `POST /1179071821966202/feed`.
+- Initial standalone returned post ID: `1179071821966202_122101542843437192`.
+- During the first 3-target Distribution Agent run, Facebook returned OAuth error `#200` while Instagram and Threads succeeded. The cause was the Facebook credential supplied to the Worker rather than the common pipeline itself.
+- The Page Access Token was re-derived from the known Page ID, validated, and replaced in the Worker secret store.
+- Distribution Agent Facebook-only repair test text: `LifeToLife Distribution Agent Facebook repair test 2026-08-14T17:48:50Z`.
+- Distribution Agent returned post ID: `1179071821966202_122101703007437192`.
+- Persistent re-query returned the same message and permalink.
+- Distribution Agent permalink: `https://www.facebook.com/122101544457437192/posts/122101703007437192`.
 
-Conclusion: Facebook Page auto-publishing is verified and ready for Distribution Agent integration. The `/me/accounts` discovery anomaly should remain documented, but it is no longer a blocker because the direct Page-ID-to-Page-Access-Token path works.
+Conclusion: Facebook Page publishing through the common LifeToLife Distribution Agent is **Verified**. The `/me/accounts` discovery anomaly remains documented but is not a blocker because the direct Page-ID-to-Page-Access-Token path works.
 
 ### 6. Instagram
 
-Instagram automated publishing was verified on 2026-08-15 KST.
+Instagram automated publishing was verified on 2026-08-15 KST and integrated into the common Distribution Agent on the same date.
 
 - Meta Developer App: `LifeToLife Distribution`
 - Instagram Business account: `@lifetolife_net`
 - Instagram User ID: `17841440001348167`
 - Permissions connected: `instagram_basic`, `instagram_content_publish`, `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`
 - The WordPress-hosted media initially could not be fetched while the WordPress site was in Coming Soon mode. After the site visibility was changed to public, media ingestion succeeded.
-- Media container ID: `18083470502333379`
-- Published Media ID: `18004092830779466`
-- Re-query confirmed `media_type=IMAGE`, username `lifetolife_net`, caption persistence, and timestamp.
-- Permalink: `https://www.instagram.com/p/DcBrsUGiZWm/`
+- Initial standalone Media container ID: `18083470502333379`
+- Initial standalone Published Media ID: `18004092830779466`
+- Initial standalone permalink: `https://www.instagram.com/p/DcBrsUGiZWm/`
+- Common Distribution Agent 3-target test created container ID `18083507975333379` and published Media ID `18014959226941168`.
+- Distribution Agent re-query confirmed `media_type=IMAGE`, username `lifetolife_net`, caption persistence, and timestamp.
+- Distribution Agent permalink: `https://www.instagram.com/p/DcB4Grcgbu8/`
 
-Conclusion: Instagram image auto-publishing and persistent re-query are verified and ready for Distribution Agent integration.
+Conclusion: Instagram image publishing through the common LifeToLife Distribution Agent is **Verified**.
 
 ### 7. Threads
 
-Threads automated publishing was verified on 2026-08-15 KST.
+Threads automated publishing was verified on 2026-08-15 KST and integrated into the common Distribution Agent on the same date.
 
 - Threads profile: `@lifetolife_net`
 - Meta Developer App: `LifeToLife Distribution`
@@ -142,12 +148,13 @@ Threads automated publishing was verified on 2026-08-15 KST.
 - OAuth callback, deauthorization callback, and data-deletion callback endpoints are hosted by the Cloudflare Worker `lifetolife-threads-callbacks`.
 - Custom callback domain: `https://threads-api.lifetolife.net`
 - Test publishing used the Threads API host `https://graph.threads.net`.
-- Test post text: `LifeToLife Threads auto-publishing test`
-- Published Threads Media ID: `18119437411883307`
-- Persistence re-query confirmed `media_product_type=THREADS`, `media_type=TEXT_POST`, username `lifetolife_net`, original text, and timestamp `2026-08-14T17:18:36+0000`.
-- Permalink: `https://www.threads.com/@lifetolife_net/post/DcB1SBKCZ9f`
+- Initial standalone Published Threads Media ID: `18119437411883307`
+- Initial standalone permalink: `https://www.threads.com/@lifetolife_net/post/DcB1SBKCZ9f`
+- Common Distribution Agent 3-target test created container ID `18081252476368456` and published Media ID `18065529290746474`.
+- Distribution Agent re-query confirmed `media_product_type=THREADS`, `media_type=TEXT_POST`, username `lifetolife_net`, original text, and timestamp.
+- Distribution Agent permalink: `https://www.threads.com/@lifetolife_net/post/DcB4GZ7moT5`.
 
-Conclusion: Threads automatic text publishing and persistent re-query are verified and ready for Distribution Agent integration.
+Conclusion: Threads text publishing through the common LifeToLife Distribution Agent is **Verified**.
 
 ## Approval pending
 
@@ -162,16 +169,29 @@ Conclusion: Threads automatic text publishing and persistent re-query are verifi
 
 ### Meta distribution group
 
-The LifeToLife Meta-side distribution path is now operational across all currently targeted Meta publishing surfaces:
+The LifeToLife Meta-side distribution path is now operational through one common Distribution Agent entry point.
 
 - Meta Business Portfolio: `LifeToLife`
 - Meta Developer App: `LifeToLife Distribution`
-- Facebook Page: `Life to Life` — **Verified**
-- Instagram Business account: `@lifetolife_net` — **Verified**
-- Threads profile: `@lifetolife_net` — **Verified**
-- Threads callbacks hosted on Cloudflare Worker with custom domain `threads-api.lifetolife.net`
+- Facebook Page: `Life to Life` — **Verified + Distribution Agent integrated**
+- Instagram Business account: `@lifetolife_net` — **Verified + Distribution Agent integrated**
+- Threads profile: `@lifetolife_net` — **Verified + Distribution Agent integrated**
+- Common Worker: `lifetolife-distribution-agent`
+- Common endpoint: `https://distribution-api.lifetolife.net`
+- Common publish route: `POST /v1/publish/meta`
+- Worker secret storage is used for the Facebook Page Access Token, Instagram credential, Threads access token, and Distribution Agent authorization key. Secret values are not stored in GitHub or the Google Sheets ledger.
+- Threads OAuth/deauthorization/data-deletion callbacks remain isolated in `lifetolife-threads-callbacks` at `https://threads-api.lifetolife.net`.
 
-Current Meta status: Facebook, Instagram, and Threads are all **Verified** for actual API-created content plus persistent re-query.
+Verification sequence on 2026-08-15 KST:
+
+1. One common 3-target request successfully published and persistently re-read Instagram and Threads.
+2. Facebook failed in that request with OAuth error `#200` because the supplied Facebook credential was not the correct Page Access Token for posting.
+3. The correct Page Access Token was re-derived from the known Page ID and validated.
+4. The Worker secret was replaced.
+5. A Facebook-only request through the same common `POST /v1/publish/meta` route successfully published and persistently re-read the Page post.
+6. A redundant second 3-target live publish was intentionally not performed because it would create duplicate Instagram and Threads verification posts without adding meaningful pipeline evidence.
+
+Current Meta status: the common LifeToLife Distribution Agent publishing path is **Verified across Facebook, Instagram, and Threads**.
 
 ### Google Cloud
 
@@ -219,13 +239,16 @@ As of 2026-08-15 KST:
 
 - Distribution-facing accounts/channels or management hubs recorded: **9**
 - Actual automated publishing verified: **7 channels** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads
+- Integrated into the common LifeToLife Distribution Agent: **3 channels** — Facebook, Instagram, Threads
 - API approval pending: **1** — Pinterest
 - Open channels with publishing automation still unverified: **0 among currently opened publishable channels**
 
 ## Immediate queue
 
-1. Integrate the verified Meta publishers — Facebook, Instagram, and Threads — into the common LifeToLife Distribution Agent.
-2. Move Threads access token handling into environment variables / secret storage; do not store token values in GitHub or the account ledger.
-3. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
-4. Keep YouTube verification video `llXXvCyOMiw` private for now as the persistence reference.
-5. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
+1. Extend the common LifeToLife Distribution Agent to Bluesky and Blogger, reusing only their already-verified publishing paths.
+2. Integrate WordPress.com after the text-channel adapters are stable, preserving its existing OAuth 2.1 / PKCE / MCP path.
+3. Integrate YouTube as the media-upload adapter after the text-oriented channels are unified.
+4. Move Google OAuth clients out of temporary Testing lifecycle where required for stable unattended operation.
+5. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
+6. Clean up Meta verification posts when convenient; cleanup is not a blocker for further integration.
+7. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
