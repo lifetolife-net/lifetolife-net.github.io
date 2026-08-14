@@ -2,3 +2,7 @@ name = "lifetolife-distribution-agent"
 main = "worker.js"
 compatibility_date = "2026-08-15"
 workers_dev = true
+
+[[routes]]
+pattern = "distribution-api.lifetolife.net"
+custom_domain = true
