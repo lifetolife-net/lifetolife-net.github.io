@@ -24,7 +24,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 | Facebook | Page: `Life to Life` | Open | Connected through Meta Business portfolio | Not yet verified | Verify Meta API publishing path |
 | Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path |
 | Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path |
-| YouTube | `@lifetolife_net` | Open | OAuth/channel identity verified; second `videos.insert` test reached processed/succeeded and remains retrievable by API | **Verification on hold** | Confirm video `llXXvCyOMiw` is still present in YouTube Studio, then restore Verified |
+| YouTube | `@lifetolife_net` | Open | YouTube Data API v3 + OAuth operational; persistent private upload verified through API and YouTube Studio | **Verified** | Integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
 
 ## Verified channels
 
@@ -78,6 +78,25 @@ Blogger automation was verified on 2026-08-14.
 
 Conclusion: Blogger's API publishing path works and is ready for Distribution Agent integration. The OAuth app is still in Google's Testing lifecycle, so long-lived unattended operation must account for that lifecycle before production deployment.
 
+### 4. YouTube
+
+YouTube automated upload was verified on 2026-08-14.
+
+- Channel title: `LifeToLife`
+- Channel handle: `@lifetolife_net`
+- Channel ID: `UCzB_Os4W_7MiVDpGbXfsqxA`
+- Google Cloud project: `LifeToLife Distribution`
+- OAuth scopes configured: `https://www.googleapis.com/auth/youtube.upload`, `https://www.googleapis.com/auth/youtube.readonly`, `https://www.googleapis.com/auth/youtube.force-ssl`
+- OAuth authorization for upload/read-only completed successfully with a separate YouTube token file.
+- Authenticated channel identity was verified through `channels.list(mine=true)` and matched `LifeToLife / @lifetolife_net`.
+- First test anomaly: `videos.insert` returned video ID `KW1viXDoxEU`, but the video disappeared immediately after upload; the exact cause remains unresolved and is retained as an anomaly record.
+- Second verification test: `videos.insert` returned video ID `llXXvCyOMiw`.
+- API polling through `videos.list(part=status,processingDetails)` reached `status.uploadStatus == processed` and `processingDetails.processingStatus == succeeded`.
+- The second test video remained retrievable by API after processing.
+- The user confirmed the same private video remained visible in YouTube Studio after processing.
+
+Conclusion: YouTube's persistent private API upload path is verified and is ready for Distribution Agent integration. The Google OAuth app is still in Testing, so long-lived unattended operation must account for that lifecycle before production deployment.
+
 ## Approval pending
 
 ### Pinterest
@@ -100,29 +119,6 @@ The LifeToLife Meta-side account structure is open:
 
 Account connection alone is not considered publishing verification. Facebook, Instagram, and Threads remain **automation unverified** until API-created content succeeds and persists.
 
-### YouTube
-
-- Channel title: `LifeToLife`
-- Channel handle: `@lifetolife_net`
-- Channel ID: `UCzB_Os4W_7MiVDpGbXfsqxA`
-- Google Cloud project: `LifeToLife Distribution`
-- OAuth scopes configured: `https://www.googleapis.com/auth/youtube.upload`, `https://www.googleapis.com/auth/youtube.readonly`, `https://www.googleapis.com/auth/youtube.force-ssl`
-- OAuth authorization for upload/read-only completed successfully with a separate YouTube token file.
-- Authenticated channel identity was verified through `channels.list(mine=true)` and matched `LifeToLife / @lifetolife_net`.
-- First test: `videos.insert` returned verification video ID `KW1viXDoxEU`, but the user observed that it disappeared immediately after upload. The exact cause remains unresolved.
-- Second test: `videos.insert` returned verification video ID `llXXvCyOMiw`.
-- Polling through `videos.list(part=status,processingDetails)` reached `status.uploadStatus == processed` and `processingDetails.processingStatus == succeeded`.
-- The second test video remained retrievable by API after processing.
-- Final verification is intentionally still on hold until the user confirms the same private video remains visible in YouTube Studio, because the first anomaly was observed at the UI/content level.
-
-Verification requirement to restore YouTube to **Verified**:
-
-1. `videos.insert` returns a video ID. **Passed** for `llXXvCyOMiw`.
-2. `videos.list` reaches processed/succeeded. **Passed**.
-3. The same private video remains retrievable by API after processing. **Passed**.
-4. The same private video remains visible in YouTube Studio. **Pending**.
-5. Only after step 4 passes should YouTube be restored to **Verified**.
-
 ## Distribution infrastructure
 
 ### Google Cloud
@@ -138,8 +134,8 @@ Verification requirement to restore YouTube to **Verified**:
 - YouTube upload OAuth scope `https://www.googleapis.com/auth/youtube.upload` added on 2026-08-14.
 - YouTube read-only OAuth scope `https://www.googleapis.com/auth/youtube.readonly` added on 2026-08-14.
 - YouTube OAuth authorization and authenticated channel identity verification completed on 2026-08-14.
-- First YouTube `videos.insert` request returned `KW1viXDoxEU`, but the video disappeared immediately afterward.
-- Second YouTube `videos.insert` test returned `llXXvCyOMiw`; API polling confirmed processed/succeeded and continued API retrieval.
+- First YouTube `videos.insert` request returned `KW1viXDoxEU`, but the video disappeared immediately afterward; this remains an unresolved anomaly record.
+- Second YouTube `videos.insert` test returned `llXXvCyOMiw`; API polling confirmed processed/succeeded, continued API retrieval, and persistent visibility in YouTube Studio.
 - YouTube delete-capable OAuth scope `https://www.googleapis.com/auth/youtube.force-ssl` was added during cleanup investigation.
 
 ### Account ledger
@@ -170,14 +166,14 @@ Rules:
 As of 2026-08-14:
 
 - Distribution-facing accounts/channels or management hubs recorded: **9**
-- Actual automated publishing verified: **3 channels** — WordPress.com, Bluesky, Blogger
+- Actual automated publishing verified: **4 channels** — WordPress.com, Bluesky, Blogger, YouTube
 - API approval pending: **1** — Pinterest
-- Open channels with publishing automation still unverified or on hold: Facebook, Instagram, Threads, YouTube
+- Open channels with publishing automation still unverified: Facebook, Instagram, Threads
 
 ## Immediate queue
 
-1. Confirm YouTube video `llXXvCyOMiw` is still present in YouTube Studio.
-2. If present, restore YouTube to **Verified** and record the successful persistent test.
-3. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
-4. Then verify the next Meta auto-publishing channel.
+1. Keep YouTube verification video `llXXvCyOMiw` private for now as the persistence reference.
+2. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
+3. Verify the next Meta auto-publishing channel.
+4. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
 5. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
