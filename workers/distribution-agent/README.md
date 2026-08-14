@@ -2,23 +2,32 @@
 
 Cloudflare Worker entry point for the common LifeToLife publishing pipeline.
 
-Production endpoint after deployment:
+Production endpoint:
 
 - `https://distribution-api.lifetolife.net`
 
-## Current scope
+## Integrated targets
 
-Phase 1 intentionally reuses only API paths that have already been individually verified for LifeToLife:
+The Agent intentionally reuses only publishing paths that were individually verified for LifeToLife before integration.
+
+### Meta group
 
 - Facebook Page: text post through `/{page-id}/feed`, followed by persistent re-query
 - Instagram Business: image container through `/{ig-user-id}/media`, publish through `/{ig-user-id}/media_publish`, followed by persistent re-query
 - Threads: text container through `/me/threads`, publish through `/me/threads_publish`, followed by persistent re-query
 
-The common request can target all three or any subset. In Phase 1, `image_url` is consumed by Instagram; Facebook and Threads stay on their already-verified text paths.
+Meta 3-target integration was verified on 2026-08-15 KST.
+
+### Text publishing group
+
+- Bluesky: App Password -> `com.atproto.server.createSession` -> `com.atproto.repo.createRecord` -> `com.atproto.repo.getRecord`
+- Blogger: OAuth refresh token -> fresh Google access token -> Blogger `posts.insert` -> `posts.get`
+
+The Bluesky/Blogger adapter code is implemented in verified-path v2. Actual integrated publishing must be verified before these two targets are marked Agent-integrated in the canonical progress record.
 
 ## Secret policy
 
-Do not commit any token or secret value.
+Do not commit any token, app password, OAuth client secret, or Distribution Agent key.
 
 Worker credentials are stored through Wrangler secrets. The local Distribution Agent authorization key is stored outside the repository at:
 
@@ -26,61 +35,101 @@ Worker credentials are stored through Wrangler secrets. The local Distribution A
 
 with file mode `600`.
 
-## Guided deployment and integrated test
+The existing Blogger OAuth files remain outside the repository at:
 
-Run:
+- `~/.lifetolife-distribution/blogger/credentials.json`
+- `~/.lifetolife-distribution/blogger/token.json`
+
+`setup-bluesky-blogger.sh` reads those files locally and sends only the required values to Cloudflare Worker Secrets. It does not print or commit them.
+
+## Meta deployment / verification
 
 ```bash
 bash deploy-meta.sh
 ```
 
+The script deploys the Worker, installs Meta secrets, checks `/health`, performs a dry run, and executes a Meta integrated publishing test.
+
+For a Facebook Page token repair without repeating successful Instagram/Threads test posts:
+
+```bash
+bash fix-facebook-token.sh
+```
+
+## Bluesky + Blogger setup / verification
+
+```bash
+bash setup-bluesky-blogger.sh
+```
+
 The script:
 
-1. checks Cloudflare authentication,
-2. deploys the Worker and `distribution-api.lifetolife.net` custom domain,
-3. creates or reuses a local Distribution Agent key,
-4. securely prompts for the Facebook/Instagram/Threads access tokens without echoing them,
-5. stores credentials as Worker secrets,
-6. checks `/health`,
-7. executes a no-publish dry run,
-8. executes one real Meta 3-target integrated publishing test and saves the combined response to `/tmp/lifetolife-meta-integrated-test.json`.
+1. validates the existing local Blogger OAuth credential/token files,
+2. extracts Blogger client ID, optional client secret, and refresh token without printing them,
+3. installs Blogger values as Worker secrets,
+4. securely prompts once for the Bluesky App Password,
+5. installs the Bluesky handle and App Password as Worker secrets,
+6. deploys verified-path v2,
+7. checks `/health`,
+8. performs a Bluesky+Blogger dry run,
+9. performs one real integrated publish to Bluesky and Blogger with persistent API re-query,
+10. saves the combined response to `/tmp/lifetolife-bluesky-blogger-integrated-test.json`.
 
-The test image is a public HTTPS JPEG from `placehold.co` so Instagram can ingest it without adding a new LifeToLife media-hosting dependency solely for verification.
+Known fixed identifiers used by the script:
 
-## Manual secret setup
+- Bluesky: `lifetolife-net.bsky.social`
+- Blogger Blog ID: `6980894376000692850`
 
-If needed, the equivalent Wrangler secret names are:
+## API endpoints
 
-```bash
-npx wrangler secret put DISTRIBUTION_AGENT_KEY
-npx wrangler secret put META_PAGE_ID
-npx wrangler secret put META_PAGE_ACCESS_TOKEN
-npx wrangler secret put INSTAGRAM_USER_ID
-npx wrangler secret put INSTAGRAM_ACCESS_TOKEN
-npx wrangler secret put THREADS_ACCESS_TOKEN
-```
+### Common endpoint
 
-`INSTAGRAM_ACCESS_TOKEN` may reuse the Facebook Page token when that token is valid for the already-verified Instagram publishing path.
+`POST /v1/publish`
 
-## Health check
+`targets` is required and can currently contain:
 
-```bash
-curl -s https://distribution-api.lifetolife.net/health
-```
+- `facebook`
+- `instagram`
+- `threads`
+- `bluesky`
+- `blogger`
 
-Expected service name: `lifetolife-distribution-agent`.
-
-## API request
+Example:
 
 ```bash
-curl -s -X POST "https://distribution-api.lifetolife.net/v1/publish/meta" \
+curl -s -X POST "https://distribution-api.lifetolife.net/v1/publish" \
   -H "Authorization: Bearer $DISTRIBUTION_AGENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "text": "LifeToLife Meta Distribution Agent integrated publishing test",
-    "image_url": "https://placehold.co/1080x1080.jpg?text=LifeToLife+Distribution+Agent",
-    "targets": ["facebook", "instagram", "threads"]
+    "title": "LifeToLife example",
+    "text": "LifeToLife common Distribution Agent example",
+    "targets": ["bluesky", "blogger"]
   }'
 ```
 
-The response reports each platform independently. `ok: true` means every requested target published successfully and the created object was re-read from the platform API. A partial failure returns HTTP 207 and preserves each platform's result so a failed target can be diagnosed without repeating successful individual verification work.
+### Backward-compatible Meta endpoint
+
+`POST /v1/publish/meta`
+
+This remains available for the already-verified Meta pipeline. When `targets` is omitted on this endpoint, Facebook, Instagram, and Threads are targeted.
+
+## Content fields
+
+- `text`: required
+- `targets`: required on `/v1/publish`
+- `title`: optional; used by Blogger
+- `html`: optional; used by Blogger instead of escaped/plain-text HTML conversion
+- `image_url`: required when Instagram is targeted
+- `dry_run`: optional boolean
+
+## Result semantics
+
+Each target returns its own result. A target is considered successful only after publishing and a follow-up API read of the created object succeed.
+
+- HTTP `200`: all requested targets succeeded
+- HTTP `207`: at least one requested target failed, with per-target results preserved
+- HTTP `400`: invalid common request or missing configuration before target execution
+
+## Google OAuth lifecycle note
+
+The Blogger OAuth project has been operating in Google's Testing lifecycle. Google documents that refresh tokens for an External consent screen in Testing generally expire after 7 days when non-basic scopes are involved. The current Blogger integration can therefore be verified now, but stable unattended production requires moving the OAuth consent configuration out of the temporary Testing lifecycle or otherwise establishing a production-stable authorization setup.
