@@ -19,7 +19,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 | WordPress.com | `lifetolifeglobal.wordpress.com` | Open | ChatGPT connector + OAuth 2.1 / PKCE + WordPress.com MCP operational | **Verified** | Production token refresh / secret storage integration |
 | Pinterest | LifeToLife | Open | Trial API access requested | **Pending approval** | Wait for Trial access approval, then verify actual pin creation |
 | Bluesky | `@lifetolife-net.bsky.social` | Open | App Password + AT Protocol API operational | **Verified** | Consider moving handle to `@lifetolife.net`; integrate into Distribution Agent |
-| Blogger | LifeToLife / `lifetolife-net` | Open | Blogger API enabled; Google OAuth path prepared | Not yet verified | Create/use OAuth client and verify actual post creation |
+| Blogger | LifeToLife / `lifetolife-net` | Open | Blogger API enabled; Desktop OAuth client created | Not yet verified | Complete OAuth authorization and verify actual API-created post |
 | Facebook | Page: `Life to Life` | Open | Connected through Meta Business portfolio | Not yet verified | Verify Meta API publishing path |
 | Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path |
 | Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path |
@@ -72,7 +72,8 @@ Conclusion: Bluesky is ready to be integrated into the LifeToLife Distribution A
 
 - LifeToLife Blogger presence is open.
 - Blogger API is enabled.
-- The remaining milestone is OAuth client use plus an actual API-created post.
+- Desktop OAuth client `LifeToLife Blogger Publisher` has been created.
+- The remaining milestone is OAuth authorization plus an actual API-created post.
 
 ### Meta distribution group
 
@@ -99,6 +100,7 @@ Account connection alone is not considered publishing verification. Facebook, In
 - Project identifier used in setup: `lifetolife-distribution`
 - Purpose: Google-side API/OAuth infrastructure for the LifeToLife Distribution Agent
 - Relevant APIs already prepared include Blogger API and YouTube Data API v3.
+- Blogger Desktop OAuth client `LifeToLife Blogger Publisher` created on 2026-08-14.
 
 ### Account ledger
 
