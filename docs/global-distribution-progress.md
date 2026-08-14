@@ -24,7 +24,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 | Facebook | Page: `Life to Life` | Open | Connected through Meta Business portfolio | Not yet verified | Verify Meta API publishing path |
 | Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path |
 | Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path |
-| YouTube | `@lifetolife_net` | Open | OAuth/channel identity verified; `videos.insert` returned a video ID, but the test video disappeared immediately afterward | **Verification on hold** | Re-test upload and confirm processing reaches `succeeded` and the private video remains retrievable in API and YouTube Studio |
+| YouTube | `@lifetolife_net` | Open | OAuth/channel identity verified; second `videos.insert` test reached processed/succeeded and remains retrievable by API | **Verification on hold** | Confirm video `llXXvCyOMiw` is still present in YouTube Studio, then restore Verified |
 
 ## Verified channels
 
@@ -109,19 +109,19 @@ Account connection alone is not considered publishing verification. Facebook, In
 - OAuth scopes configured: `https://www.googleapis.com/auth/youtube.upload`, `https://www.googleapis.com/auth/youtube.readonly`, `https://www.googleapis.com/auth/youtube.force-ssl`
 - OAuth authorization for upload/read-only completed successfully with a separate YouTube token file.
 - Authenticated channel identity was verified through `channels.list(mine=true)` and matched `LifeToLife / @lifetolife_net`.
-- `videos.insert` returned verification video ID `KW1viXDoxEU` and a watch URL.
-- User observed that the verification video disappeared immediately after upload.
-- Therefore the prior **Verified** designation was withdrawn. A returned video ID proves the upload request reached YouTube, but it does not prove that YouTube completed processing and retained the video.
-- A later `videos.delete` cleanup attempt returned `403 insufficientPermissions`; this happened after the video had already disappeared and does not explain the initial disappearance.
-- The exact cause of the initial disappearance has not yet been established.
+- First test: `videos.insert` returned verification video ID `KW1viXDoxEU`, but the user observed that it disappeared immediately after upload. The exact cause remains unresolved.
+- Second test: `videos.insert` returned verification video ID `llXXvCyOMiw`.
+- Polling through `videos.list(part=status,processingDetails)` reached `status.uploadStatus == processed` and `processingDetails.processingStatus == succeeded`.
+- The second test video remained retrievable by API after processing.
+- Final verification is intentionally still on hold until the user confirms the same private video remains visible in YouTube Studio, because the first anomaly was observed at the UI/content level.
 
-Verification requirement for the next test:
+Verification requirement to restore YouTube to **Verified**:
 
-1. `videos.insert` returns a video ID.
-2. Poll `videos.list(part=status,processingDetails)` for that ID.
-3. Confirm `processingDetails.processingStatus == succeeded` and `status.uploadStatus == processed`.
-4. Confirm the same private video remains retrievable by API and visible in YouTube Studio after processing.
-5. Only then restore YouTube to **Verified**.
+1. `videos.insert` returns a video ID. **Passed** for `llXXvCyOMiw`.
+2. `videos.list` reaches processed/succeeded. **Passed**.
+3. The same private video remains retrievable by API after processing. **Passed**.
+4. The same private video remains visible in YouTube Studio. **Pending**.
+5. Only after step 4 passes should YouTube be restored to **Verified**.
 
 ## Distribution infrastructure
 
@@ -138,7 +138,8 @@ Verification requirement for the next test:
 - YouTube upload OAuth scope `https://www.googleapis.com/auth/youtube.upload` added on 2026-08-14.
 - YouTube read-only OAuth scope `https://www.googleapis.com/auth/youtube.readonly` added on 2026-08-14.
 - YouTube OAuth authorization and authenticated channel identity verification completed on 2026-08-14.
-- YouTube `videos.insert` request returned a video ID on 2026-08-14, but persistence/processing verification failed because the video disappeared immediately afterward.
+- First YouTube `videos.insert` request returned `KW1viXDoxEU`, but the video disappeared immediately afterward.
+- Second YouTube `videos.insert` test returned `llXXvCyOMiw`; API polling confirmed processed/succeeded and continued API retrieval.
 - YouTube delete-capable OAuth scope `https://www.googleapis.com/auth/youtube.force-ssl` was added during cleanup investigation.
 
 ### Account ledger
@@ -161,7 +162,7 @@ Rules:
 2. API keys, app passwords, OAuth tokens, and client secrets are stored only in environment variables or a dedicated secret store.
 3. Enable 2FA where available and store recovery codes separately from the ledger.
 4. Every new channel must be added to both this canonical progress document and the account ledger as soon as it is opened.
-5. A channel is marked **Verified** only after an actual automated publish/upload succeeds and the created content persists through platform processing.
+5. A channel is marked **Verified** only after an actual automated publish/upload succeeds and the created content persists through platform processing and the intended platform surface.
 6. Paused or abandoned channels should remain in the record with status changed rather than being silently removed.
 
 ## Current totals
@@ -175,8 +176,8 @@ As of 2026-08-14:
 
 ## Immediate queue
 
-1. Diagnose YouTube by re-running one private test upload and monitoring `status.uploadStatus` plus `processingDetails.processingStatus` until terminal state.
-2. Restore YouTube to **Verified** only if the video reaches processed/succeeded and persists in both API retrieval and YouTube Studio.
+1. Confirm YouTube video `llXXvCyOMiw` is still present in YouTube Studio.
+2. If present, restore YouTube to **Verified** and record the successful persistent test.
 3. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
 4. Then verify the next Meta auto-publishing channel.
 5. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
