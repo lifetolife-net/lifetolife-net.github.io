@@ -1,6 +1,6 @@
 # LifeToLife Global Distribution Progress
 
-Last updated: 2026-08-14 (KST)
+Last updated: 2026-08-15 (KST)
 
 This document is the canonical progress record for LifeToLife's global distribution and auto-publishing network.
 
@@ -22,8 +22,8 @@ This document is the canonical progress record for LifeToLife's global distribut
 | Bluesky | `@lifetolife-net.bsky.social` | Open | App Password + AT Protocol API operational | **Verified** | Consider moving handle to `@lifetolife.net`; integrate into Distribution Agent |
 | Blogger | LifeToLife / `lifetolife-net` | Open | Blogger API + Desktop OAuth operational | **Verified** | Integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
 | Facebook | Page: `Life to Life` | Open | Meta Developer App `LifeToLife Distribution`; Page Access Token path operational; Graph API post creation and persistent re-read verified | **Verified** | Integrate into Distribution Agent; clean up verification post |
-| Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path using the now-working Meta/Page setup |
-| Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path after Instagram |
+| Instagram | `@lifetolife_net` | Business account; connected to LifeToLife portfolio | Instagram Graph API publishing operational; `instagram_basic` + `instagram_content_publish` and Page permissions connected | **Verified** | Integrate into Distribution Agent |
+| Threads | `@lifetolife_net` | Open | Threads API OAuth + publishing operational; callback endpoints hosted on Cloudflare Worker | **Verified** | Integrate into Distribution Agent; move token handling to secret storage |
 | YouTube | `@lifetolife_net` | Open | YouTube Data API v3 + OAuth operational; persistent private upload verified through API and YouTube Studio | **Verified** | Integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
 
 ## Verified channels
@@ -116,6 +116,39 @@ Facebook Page automated publishing was verified on 2026-08-14.
 
 Conclusion: Facebook Page auto-publishing is verified and ready for Distribution Agent integration. The `/me/accounts` discovery anomaly should remain documented, but it is no longer a blocker because the direct Page-ID-to-Page-Access-Token path works.
 
+### 6. Instagram
+
+Instagram automated publishing was verified on 2026-08-15 KST.
+
+- Meta Developer App: `LifeToLife Distribution`
+- Instagram Business account: `@lifetolife_net`
+- Instagram User ID: `17841440001348167`
+- Permissions connected: `instagram_basic`, `instagram_content_publish`, `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`
+- The WordPress-hosted media initially could not be fetched while the WordPress site was in Coming Soon mode. After the site visibility was changed to public, media ingestion succeeded.
+- Media container ID: `18083470502333379`
+- Published Media ID: `18004092830779466`
+- Re-query confirmed `media_type=IMAGE`, username `lifetolife_net`, caption persistence, and timestamp.
+- Permalink: `https://www.instagram.com/p/DcBrsUGiZWm/`
+
+Conclusion: Instagram image auto-publishing and persistent re-query are verified and ready for Distribution Agent integration.
+
+### 7. Threads
+
+Threads automated publishing was verified on 2026-08-15 KST.
+
+- Threads profile: `@lifetolife_net`
+- Meta Developer App: `LifeToLife Distribution`
+- Permissions include `threads_basic` and `threads_content_publish`; additional Threads permissions were also granted during testing.
+- OAuth callback, deauthorization callback, and data-deletion callback endpoints are hosted by the Cloudflare Worker `lifetolife-threads-callbacks`.
+- Custom callback domain: `https://threads-api.lifetolife.net`
+- Test publishing used the Threads API host `https://graph.threads.net`.
+- Test post text: `LifeToLife Threads auto-publishing test`
+- Published Threads Media ID: `18119437411883307`
+- Persistence re-query confirmed `media_product_type=THREADS`, `media_type=TEXT_POST`, username `lifetolife_net`, original text, and timestamp `2026-08-14T17:18:36+0000`.
+- Permalink: `https://www.threads.com/@lifetolife_net/post/DcB1SBKCZ9f`
+
+Conclusion: Threads automatic text publishing and persistent re-query are verified and ready for Distribution Agent integration.
+
 ## Approval pending
 
 ### Pinterest
@@ -125,26 +158,20 @@ Conclusion: Facebook Page auto-publishing is verified and ready for Distribution
 - Current state: **Trial access pending**.
 - No automated publishing success should be recorded until actual pin creation is verified after approval.
 
-## Open but automation not yet fully verified
+## Distribution infrastructure
 
 ### Meta distribution group
 
-The LifeToLife Meta-side account structure is open:
+The LifeToLife Meta-side distribution path is now operational across all currently targeted Meta publishing surfaces:
 
 - Meta Business Portfolio: `LifeToLife`
-- Facebook Page: `Life to Life`
-- Instagram: existing promotional account converted to Business and connected to the LifeToLife portfolio
-- Threads: profile created from the connected Instagram account
-- Meta Developer App: `LifeToLife Distribution` created on 2026-08-14
-- Facebook use case: `Manage everything on your Page` / page management use case configured
-- Graph API Explorer permissions confirmed through `GET /me/permissions`: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, and `public_profile` all returned `granted`
-- `GET /me/accounts` still returned an empty `data` array, but this was bypassed successfully using the known Facebook Page ID to request `name,access_token` directly
-- Page Access Token identity was confirmed with `GET /me?fields=id,name` as `Life to Life` / `1179071821966202`
-- Facebook actual API post creation succeeded and the created post was re-read successfully with its message and permalink intact
+- Meta Developer App: `LifeToLife Distribution`
+- Facebook Page: `Life to Life` — **Verified**
+- Instagram Business account: `@lifetolife_net` — **Verified**
+- Threads profile: `@lifetolife_net` — **Verified**
+- Threads callbacks hosted on Cloudflare Worker with custom domain `threads-api.lifetolife.net`
 
-Current Meta status: Facebook is **Verified**. Instagram and Threads remain **automation unverified** until their own API-created content succeeds and persists.
-
-## Distribution infrastructure
+Current Meta status: Facebook, Instagram, and Threads are all **Verified** for actual API-created content plus persistent re-query.
 
 ### Google Cloud
 
@@ -188,18 +215,17 @@ Rules:
 
 ## Current totals
 
-As of 2026-08-14:
+As of 2026-08-15 KST:
 
 - Distribution-facing accounts/channels or management hubs recorded: **9**
-- Actual automated publishing verified: **5 channels** — WordPress.com, Bluesky, Blogger, YouTube, Facebook
+- Actual automated publishing verified: **7 channels** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads
 - API approval pending: **1** — Pinterest
-- Open channels with publishing automation still unverified: Instagram, Threads
+- Open channels with publishing automation still unverified: **0 among currently opened publishable channels**
 
 ## Immediate queue
 
-1. Keep YouTube verification video `llXXvCyOMiw` private for now as the persistence reference.
-2. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
-3. Clean up the Facebook verification post after the successful persistence check if desired; retain the post ID in this record.
-4. Verify Instagram auto-publishing next using the existing Meta setup, then verify Threads.
-5. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
-6. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
+1. Integrate the verified Meta publishers — Facebook, Instagram, and Threads — into the common LifeToLife Distribution Agent.
+2. Move Threads access token handling into environment variables / secret storage; do not store token values in GitHub or the account ledger.
+3. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
+4. Keep YouTube verification video `llXXvCyOMiw` private for now as the persistence reference.
+5. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
