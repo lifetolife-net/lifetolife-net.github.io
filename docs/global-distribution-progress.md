@@ -19,7 +19,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 | WordPress.com | `lifetolifeglobal.wordpress.com` | Open | ChatGPT connector + OAuth 2.1 / PKCE + WordPress.com MCP operational | **Verified** | Production token refresh / secret storage integration |
 | Pinterest | LifeToLife | Open | Trial API access requested | **Pending approval** | Wait for Trial access approval, then verify actual pin creation |
 | Bluesky | `@lifetolife-net.bsky.social` | Open | App Password + AT Protocol API operational | **Verified** | Consider moving handle to `@lifetolife.net`; integrate into Distribution Agent |
-| Blogger | LifeToLife / `lifetolife-net` | Open | Blogger API enabled; Desktop OAuth client created; Blogger OAuth scope added | Not yet verified | Complete OAuth authorization and verify actual API-created post |
+| Blogger | LifeToLife / `lifetolife-net` | Open | Blogger API + Desktop OAuth operational | **Verified** | Integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
 | Facebook | Page: `Life to Life` | Open | Connected through Meta Business portfolio | Not yet verified | Verify Meta API publishing path |
 | Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path |
 | Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path |
@@ -57,6 +57,25 @@ Bluesky automation was verified on 2026-08-14.
 
 Conclusion: Bluesky is ready to be integrated into the LifeToLife Distribution Agent.
 
+### 3. Blogger
+
+Blogger automation was verified on 2026-08-14.
+
+- Blog name: `LifeToLife`
+- Blog ID: `6980894376000692850`
+- Blog URL: `https://lifetolife-net.blogspot.com/`
+- Google Cloud project: `LifeToLife Distribution`
+- Authentication: Desktop OAuth client `LifeToLife Blogger Publisher`
+- OAuth scope: `https://www.googleapis.com/auth/blogger`
+- Authenticated blog discovery: verified through `blogs.listByUser(userId="self")`
+- Publishing: verified through `posts.insert`
+- Test post title: `LifeToLife Blogger auto-publishing test`
+- Returned post ID: `3206693250991989192`
+- Returned status: `LIVE`
+- Returned URL: `https://lifetolife-net.blogspot.com/2026/08/lifetolife-blogger-auto-publishing-test.html`
+
+Conclusion: Blogger's API publishing path works and is ready for Distribution Agent integration. The OAuth app is still in Google's Testing lifecycle, so long-lived unattended operation must account for that lifecycle before production deployment.
+
 ## Approval pending
 
 ### Pinterest
@@ -67,14 +86,6 @@ Conclusion: Bluesky is ready to be integrated into the LifeToLife Distribution A
 - No automated publishing success should be recorded until actual pin creation is verified after approval.
 
 ## Open but automation not yet verified
-
-### Blogger
-
-- LifeToLife Blogger presence is open.
-- Blogger API is enabled.
-- Desktop OAuth client `LifeToLife Blogger Publisher` has been created.
-- OAuth scope `https://www.googleapis.com/auth/blogger` has been added in Google Auth Platform Data Access.
-- The remaining milestone is OAuth authorization plus an actual API-created post.
 
 ### Meta distribution group
 
@@ -103,6 +114,7 @@ Account connection alone is not considered publishing verification. Facebook, In
 - Relevant APIs already prepared include Blogger API and YouTube Data API v3.
 - Blogger Desktop OAuth client `LifeToLife Blogger Publisher` created on 2026-08-14.
 - Blogger OAuth scope `https://www.googleapis.com/auth/blogger` added on 2026-08-14.
+- Blogger OAuth authorization, authenticated blog discovery, and live API post creation verified on 2026-08-14.
 
 ### Account ledger
 
@@ -132,13 +144,14 @@ Rules:
 As of 2026-08-14:
 
 - Distribution-facing accounts/channels or management hubs recorded: **9**
-- Actual automated publishing verified: **2 channels** — WordPress.com, Bluesky
+- Actual automated publishing verified: **3 channels** — WordPress.com, Bluesky, Blogger
 - API approval pending: **1** — Pinterest
-- Open channels with publishing automation still unverified: Blogger, Facebook, Instagram, Threads, YouTube
+- Open channels with publishing automation still unverified: Facebook, Instagram, Threads, YouTube
 
 ## Immediate queue
 
-1. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
-2. Verify the next low-friction auto-publishing channel.
-3. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
-4. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
+1. Delete the Blogger verification post after preserving its post ID and verification result in this record.
+2. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
+3. Verify the next low-friction auto-publishing channel.
+4. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
+5. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
