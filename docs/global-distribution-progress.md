@@ -23,7 +23,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 | Facebook | Page: `Life to Life` | Open | Connected through Meta Business portfolio | Not yet verified | Verify Meta API publishing path |
 | Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path |
 | Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path |
-| YouTube | `@lifetolife_net` | Open | YouTube Data API v3 prepared; `youtube.upload` OAuth scope added | Not yet verified | Complete OAuth authorization, verify channel identity, then upload a private test video |
+| YouTube | `@lifetolife_net` | Open | YouTube Data API v3 prepared; `youtube.upload` + `youtube.readonly` OAuth scopes added | Not yet verified | Complete OAuth authorization, verify channel identity, then upload a private test video |
 
 ## Verified channels
 
@@ -104,7 +104,7 @@ Account connection alone is not considered publishing verification. Facebook, In
 - Channel handle: `@lifetolife_net`
 - Channel exists and is reserved for LifeToLife distribution.
 - YouTube Data API v3 is prepared in the `LifeToLife Distribution` Google Cloud project.
-- OAuth scope `https://www.googleapis.com/auth/youtube.upload` was added on 2026-08-14.
+- OAuth scopes `https://www.googleapis.com/auth/youtube.upload` and `https://www.googleapis.com/auth/youtube.readonly` were added on 2026-08-14.
 - Automated upload remains unverified until OAuth authorization, channel identity verification, and an API-created test upload succeed.
 
 ## Distribution infrastructure
@@ -119,7 +119,7 @@ Account connection alone is not considered publishing verification. Facebook, In
 - Blogger OAuth scope `https://www.googleapis.com/auth/blogger` added on 2026-08-14.
 - Blogger OAuth authorization, authenticated blog discovery, and live API post creation verified on 2026-08-14.
 - Blogger verification post deleted after successful validation on 2026-08-14.
-- YouTube upload OAuth scope `https://www.googleapis.com/auth/youtube.upload` added on 2026-08-14.
+- YouTube OAuth scopes `https://www.googleapis.com/auth/youtube.upload` and `https://www.googleapis.com/auth/youtube.readonly` added on 2026-08-14.
 
 ### Account ledger
 
