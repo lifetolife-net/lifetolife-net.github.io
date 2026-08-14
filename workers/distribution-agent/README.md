@@ -2,6 +2,10 @@
 
 Cloudflare Worker entry point for the common LifeToLife publishing pipeline.
 
+Production endpoint after deployment:
+
+- `https://distribution-api.lifetolife.net`
+
 ## Current scope
 
 Phase 1 intentionally reuses only API paths that have already been individually verified for LifeToLife:
@@ -16,62 +20,65 @@ The common request can target all three or any subset. In Phase 1, `image_url` i
 
 Do not commit any token or secret value.
 
-Set these through Wrangler secrets:
+Worker credentials are stored through Wrangler secrets. The local Distribution Agent authorization key is stored outside the repository at:
+
+- `~/.config/lifetolife/distribution-agent-key`
+
+with file mode `600`.
+
+## Guided deployment and integrated test
+
+Run:
 
 ```bash
-wrangler secret put DISTRIBUTION_AGENT_KEY
-wrangler secret put META_PAGE_ID
-wrangler secret put META_PAGE_ACCESS_TOKEN
-wrangler secret put INSTAGRAM_USER_ID
-wrangler secret put INSTAGRAM_ACCESS_TOKEN
-wrangler secret put THREADS_ACCESS_TOKEN
+bash deploy-meta.sh
 ```
 
-`INSTAGRAM_ACCESS_TOKEN` is optional when the same token used in `META_PAGE_ACCESS_TOKEN` is valid for the Instagram publishing calls, but keeping the two names separate is preferred for future credential rotation.
+The script:
 
-## Deploy
+1. checks Cloudflare authentication,
+2. deploys the Worker and `distribution-api.lifetolife.net` custom domain,
+3. creates or reuses a local Distribution Agent key,
+4. securely prompts for the Facebook/Instagram/Threads access tokens without echoing them,
+5. stores credentials as Worker secrets,
+6. checks `/health`,
+7. executes a no-publish dry run,
+8. executes one real Meta 3-target integrated publishing test and saves the combined response to `/tmp/lifetolife-meta-integrated-test.json`.
 
-From this directory:
+The test image is a public HTTPS JPEG from `placehold.co` so Instagram can ingest it without adding a new LifeToLife media-hosting dependency solely for verification.
+
+## Manual secret setup
+
+If needed, the equivalent Wrangler secret names are:
 
 ```bash
-npx wrangler deploy
+npx wrangler secret put DISTRIBUTION_AGENT_KEY
+npx wrangler secret put META_PAGE_ID
+npx wrangler secret put META_PAGE_ACCESS_TOKEN
+npx wrangler secret put INSTAGRAM_USER_ID
+npx wrangler secret put INSTAGRAM_ACCESS_TOKEN
+npx wrangler secret put THREADS_ACCESS_TOKEN
 ```
+
+`INSTAGRAM_ACCESS_TOKEN` may reuse the Facebook Page token when that token is valid for the already-verified Instagram publishing path.
 
 ## Health check
 
 ```bash
-curl -s https://<worker-url>/health
+curl -s https://distribution-api.lifetolife.net/health
 ```
 
 Expected service name: `lifetolife-distribution-agent`.
 
-## Dry run
-
-A dry run validates the common payload without publishing anything:
+## API request
 
 ```bash
-curl -s -X POST "https://<worker-url>/v1/publish/meta" \
-  -H "Authorization: Bearer $DISTRIBUTION_AGENT_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "LifeToLife Meta Distribution Agent dry run",
-    "image_url": "https://<public-image-url>",
-    "targets": ["facebook", "instagram", "threads"],
-    "dry_run": true
-  }'
-```
-
-## Integrated publish test
-
-Use one public HTTPS image that Meta can fetch. The image is required because Instagram is included in the target set.
-
-```bash
-curl -s -X POST "https://<worker-url>/v1/publish/meta" \
+curl -s -X POST "https://distribution-api.lifetolife.net/v1/publish/meta" \
   -H "Authorization: Bearer $DISTRIBUTION_AGENT_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "text": "LifeToLife Meta Distribution Agent integrated publishing test",
-    "image_url": "https://<public-image-url>",
+    "image_url": "https://placehold.co/1080x1080.jpg?text=LifeToLife+Distribution+Agent",
     "targets": ["facebook", "instagram", "threads"]
   }'
 ```
