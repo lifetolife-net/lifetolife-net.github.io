@@ -73,6 +73,7 @@ Blogger automation was verified on 2026-08-14.
 - Returned post ID: `3206693250991989192`
 - Returned status: `LIVE`
 - Returned URL: `https://lifetolife-net.blogspot.com/2026/08/lifetolife-blogger-auto-publishing-test.html`
+- Verification post cleanup: deleted successfully after validation on 2026-08-14.
 
 Conclusion: Blogger's API publishing path works and is ready for Distribution Agent integration. The OAuth app is still in Google's Testing lifecycle, so long-lived unattended operation must account for that lifecycle before production deployment.
 
@@ -115,6 +116,7 @@ Account connection alone is not considered publishing verification. Facebook, In
 - Blogger Desktop OAuth client `LifeToLife Blogger Publisher` created on 2026-08-14.
 - Blogger OAuth scope `https://www.googleapis.com/auth/blogger` added on 2026-08-14.
 - Blogger OAuth authorization, authenticated blog discovery, and live API post creation verified on 2026-08-14.
+- Blogger verification post deleted after successful validation on 2026-08-14.
 
 ### Account ledger
 
@@ -150,8 +152,7 @@ As of 2026-08-14:
 
 ## Immediate queue
 
-1. Delete the Blogger verification post after preserving its post ID and verification result in this record.
-2. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
-3. Verify the next low-friction auto-publishing channel.
-4. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
-5. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
+1. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
+2. Verify YouTube automated upload as the next low-friction channel, reusing the existing Google Cloud/OAuth setup where appropriate.
+3. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
+4. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
