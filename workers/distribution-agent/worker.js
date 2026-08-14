@@ -1,6 +1,12 @@
 const META_GRAPH = "https://graph.facebook.com/v26.0";
 const THREADS_GRAPH = "https://graph.threads.net";
-const ALL_META_TARGETS = ["facebook", "instagram", "threads"];
+const BLUESKY_PDS = "https://bsky.social";
+const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
+const BLOGGER_API = "https://www.googleapis.com/blogger/v3";
+
+const META_TARGETS = ["facebook", "instagram", "threads"];
+const TEXT_TARGETS = ["bluesky", "blogger"];
+const ALL_TARGETS = [...META_TARGETS, ...TEXT_TARGETS];
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data, null, 2), {
@@ -22,6 +28,41 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+async function readJsonResponse(response) {
+  const text = await response.text();
+  let payload;
+  try {
+    payload = text ? JSON.parse(text) : {};
+  } catch {
+    payload = { raw: text };
+  }
+  return payload;
+}
+
+function providerError(provider, response, payload, fallback) {
+  const err = new Error(
+    payload?.error?.message ||
+      payload?.error_description ||
+      payload?.message ||
+      (typeof payload?.error === "string" ? payload.error : null) ||
+      fallback ||
+      `${provider} request failed with HTTP ${response.status}`
+  );
+  err.status = response.status;
+  err.provider = provider;
+  err.providerPayload = payload;
+  return err;
+}
+
+async function fetchJson(url, options = {}, provider = "external") {
+  const response = await fetch(url, options);
+  const payload = await readJsonResponse(response);
+  if (!response.ok || payload?.error) {
+    throw providerError(provider, response, payload);
+  }
+  return payload;
+}
+
 async function graphRequest(base, path, token, { method = "GET", params = {} } = {}) {
   const url = new URL(`${base}/${String(path).replace(/^\/+/, "")}`);
   const headers = { Authorization: `Bearer ${token}` };
@@ -40,17 +81,7 @@ async function graphRequest(base, path, token, { method = "GET", params = {} } =
     body = encoded.toString();
   }
 
-  const response = await fetch(url, { method, headers, body });
-  const payload = await response.json().catch(async () => ({ raw: await response.text().catch(() => "") }));
-
-  if (!response.ok || payload?.error) {
-    const err = new Error(payload?.error?.message || `Graph request failed with HTTP ${response.status}`);
-    err.status = response.status;
-    err.graph = payload;
-    throw err;
-  }
-
-  return payload;
+  return fetchJson(url, { method, headers, body }, "meta");
 }
 
 async function publishFacebook(env, content) {
@@ -164,23 +195,189 @@ async function publishThreads(env, content) {
   };
 }
 
-function normalizeTargets(targets) {
-  if (targets === undefined) return [...ALL_META_TARGETS];
+async function createBlueskySession(env) {
+  const identifier = requiredEnv(env, "BLUESKY_IDENTIFIER");
+  const password = requiredEnv(env, "BLUESKY_APP_PASSWORD");
+
+  return fetchJson(
+    `${BLUESKY_PDS}/xrpc/com.atproto.server.createSession`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ identifier, password }),
+    },
+    "bluesky"
+  );
+}
+
+function parseAtUri(uri) {
+  const match = /^at:\/\/([^/]+)\/([^/]+)\/([^/]+)$/.exec(String(uri || ""));
+  if (!match) throw new Error(`Unexpected Bluesky AT URI: ${uri}`);
+  return { repo: match[1], collection: match[2], rkey: match[3] };
+}
+
+async function publishBluesky(env, content) {
+  const session = await createBlueskySession(env);
+  const record = {
+    $type: "app.bsky.feed.post",
+    text: content.text,
+    createdAt: new Date().toISOString(),
+  };
+
+  const created = await fetchJson(
+    `${BLUESKY_PDS}/xrpc/com.atproto.repo.createRecord`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.accessJwt}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        repo: session.did,
+        collection: "app.bsky.feed.post",
+        record,
+      }),
+    },
+    "bluesky"
+  );
+
+  const parts = parseAtUri(created.uri);
+  const verifyUrl = new URL(`${BLUESKY_PDS}/xrpc/com.atproto.repo.getRecord`);
+  verifyUrl.searchParams.set("repo", parts.repo);
+  verifyUrl.searchParams.set("collection", parts.collection);
+  verifyUrl.searchParams.set("rkey", parts.rkey);
+
+  const verified = await fetchJson(
+    verifyUrl,
+    { headers: { Authorization: `Bearer ${session.accessJwt}` } },
+    "bluesky"
+  );
+
+  const handle = session.handle || requiredEnv(env, "BLUESKY_IDENTIFIER");
+  return {
+    ok: true,
+    target: "bluesky",
+    mode: "verified-createRecord",
+    id: parts.rkey,
+    uri: created.uri,
+    cid: created.cid || null,
+    permalink: `https://bsky.app/profile/${encodeURIComponent(handle)}/post/${encodeURIComponent(parts.rkey)}`,
+    verification: {
+      uri: verified.uri || created.uri,
+      cid: verified.cid || null,
+      value: verified.value || null,
+    },
+  };
+}
+
+async function getBloggerAccessToken(env) {
+  const params = new URLSearchParams({
+    client_id: requiredEnv(env, "BLOGGER_CLIENT_ID"),
+    refresh_token: requiredEnv(env, "BLOGGER_REFRESH_TOKEN"),
+    grant_type: "refresh_token",
+  });
+
+  if (env.BLOGGER_CLIENT_SECRET) params.set("client_secret", env.BLOGGER_CLIENT_SECRET);
+
+  const token = await fetchJson(
+    GOOGLE_TOKEN_ENDPOINT,
+    {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    },
+    "google-oauth"
+  );
+
+  if (!token.access_token) throw new Error("Google token refresh returned no access_token");
+  return token.access_token;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function plainTextToHtml(text) {
+  return String(text)
+    .split(/\n{2,}/)
+    .map(block => `<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>`)
+    .join("\n");
+}
+
+async function bloggerRequest(path, accessToken, { method = "GET", query = {}, body } = {}) {
+  const url = new URL(`${BLOGGER_API}/${String(path).replace(/^\/+/, "")}`);
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null) url.searchParams.set(key, String(value));
+  }
+
+  const headers = { Authorization: `Bearer ${accessToken}` };
+  const options = { method, headers };
+  if (body !== undefined) {
+    headers["content-type"] = "application/json";
+    options.body = JSON.stringify(body);
+  }
+
+  return fetchJson(url, options, "blogger");
+}
+
+async function publishBlogger(env, content) {
+  const blogId = requiredEnv(env, "BLOGGER_BLOG_ID");
+  const accessToken = await getBloggerAccessToken(env);
+  const title = content.title || content.text.split(/\n/)[0].slice(0, 120) || "LifeToLife";
+  const html = content.html || plainTextToHtml(content.text);
+
+  const created = await bloggerRequest(`blogs/${blogId}/posts`, accessToken, {
+    method: "POST",
+    query: { isDraft: "false" },
+    body: {
+      kind: "blogger#post",
+      blog: { id: blogId },
+      title,
+      content: html,
+    },
+  });
+
+  const verified = await bloggerRequest(`blogs/${blogId}/posts/${created.id}`, accessToken);
+
+  return {
+    ok: true,
+    target: "blogger",
+    mode: "verified-posts.insert",
+    id: created.id,
+    permalink: verified.url || created.url || null,
+    verification: {
+      id: verified.id || created.id,
+      title: verified.title || null,
+      url: verified.url || null,
+      published: verified.published || null,
+      updated: verified.updated || null,
+      status: verified.status || null,
+    },
+  };
+}
+
+function normalizeTargets(targets, { defaultTargets = null } = {}) {
+  if (targets === undefined && defaultTargets) return [...defaultTargets];
   if (!Array.isArray(targets) || targets.length === 0) {
-    throw new Error("targets must be a non-empty array when provided");
+    throw new Error("targets must be a non-empty array");
   }
 
   const unique = [...new Set(targets.map(value => String(value).toLowerCase()))];
-  const invalid = unique.filter(value => !ALL_META_TARGETS.includes(value));
+  const invalid = unique.filter(value => !ALL_TARGETS.includes(value));
   if (invalid.length) throw new Error(`Unsupported target(s): ${invalid.join(", ")}`);
   return unique;
 }
 
-function validatePublishBody(body) {
+function validatePublishBody(body, options = {}) {
   const text = String(body?.text || "").trim();
   if (!text) throw new Error("text is required");
 
-  const targets = normalizeTargets(body.targets);
+  const targets = normalizeTargets(body.targets, options);
   const imageUrl = body.image_url ? String(body.image_url).trim() : null;
 
   if (targets.includes("instagram") && !imageUrl) {
@@ -199,6 +396,8 @@ function validatePublishBody(body) {
 
   return {
     text,
+    title: body?.title ? String(body.title).trim() : null,
+    html: body?.html ? String(body.html) : null,
     image_url: imageUrl,
     targets,
     dry_run: body?.dry_run === true,
@@ -212,26 +411,37 @@ function authorize(request, env) {
 }
 
 function publicError(error) {
+  const payload = error?.providerPayload;
   return {
     message: error?.message || String(error),
-    graph: error?.graph?.error
+    provider: error?.provider || undefined,
+    details: payload
       ? {
-          type: error.graph.error.type || null,
-          code: error.graph.error.code || null,
-          error_subcode: error.graph.error.error_subcode || null,
-          message: error.graph.error.message || null,
+          error:
+            typeof payload.error === "string"
+              ? payload.error
+              : payload.error?.type || payload.error?.code || undefined,
+          code: payload.error?.code || undefined,
+          error_subcode: payload.error?.error_subcode || undefined,
+          message:
+            payload.error?.message || payload.error_description || payload.message || undefined,
         }
       : undefined,
   };
 }
 
-async function publishMeta(env, content) {
-  const publishers = {
+function publisherMap(env, content) {
+  return {
     facebook: () => publishFacebook(env, content),
     instagram: () => publishInstagram(env, content),
     threads: () => publishThreads(env, content),
+    bluesky: () => publishBluesky(env, content),
+    blogger: () => publishBlogger(env, content),
   };
+}
 
+async function publishTargets(env, content) {
+  const publishers = publisherMap(env, content);
   const entries = await Promise.all(
     content.targets.map(async target => {
       try {
@@ -247,6 +457,18 @@ async function publishMeta(env, content) {
   return { ok, results };
 }
 
+function dryRunPlan(content) {
+  const plan = {};
+  for (const target of content.targets) {
+    if (target === "facebook") plan.facebook = "verified text /feed + re-query";
+    if (target === "instagram") plan.instagram = "verified image /media -> /media_publish + re-query";
+    if (target === "threads") plan.threads = "verified text /threads -> /threads_publish + re-query";
+    if (target === "bluesky") plan.bluesky = "App Password -> createSession -> createRecord -> getRecord";
+    if (target === "blogger") plan.blogger = "refresh token -> access token -> posts.insert -> posts.get";
+  }
+  return plan;
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -256,12 +478,15 @@ export default {
       return json({
         ok: true,
         service: "lifetolife-distribution-agent",
-        meta_targets: ALL_META_TARGETS,
-        mode: "verified-path-v1",
+        targets: ALL_TARGETS,
+        meta_targets: META_TARGETS,
+        mode: "verified-path-v2",
       });
     }
 
-    if (path !== "/v1/publish/meta") return new Response("Not Found", { status: 404 });
+    const isMetaEndpoint = path === "/v1/publish/meta";
+    const isCommonEndpoint = path === "/v1/publish";
+    if (!isMetaEndpoint && !isCommonEndpoint) return new Response("Not Found", { status: 404 });
     if (request.method !== "POST") return new Response("Method Not Allowed", { status: 405 });
 
     try {
@@ -270,31 +495,38 @@ export default {
       const body = await request.json().catch(() => null);
       if (!body) return json({ ok: false, error: "Request body must be JSON" }, 400);
 
-      const content = validatePublishBody(body);
+      const content = validatePublishBody(body, {
+        defaultTargets: isMetaEndpoint ? META_TARGETS : null,
+      });
+
+      if (isMetaEndpoint) {
+        const nonMeta = content.targets.filter(target => !META_TARGETS.includes(target));
+        if (nonMeta.length) {
+          return json({ ok: false, error: `Meta endpoint does not accept: ${nonMeta.join(", ")}` }, 400);
+        }
+      }
 
       if (content.dry_run) {
         return json({
           ok: true,
           dry_run: true,
-          plan: {
-            facebook: content.targets.includes("facebook") ? "verified text /feed + re-query" : "not targeted",
-            instagram: content.targets.includes("instagram") ? "verified image /media -> /media_publish + re-query" : "not targeted",
-            threads: content.targets.includes("threads") ? "verified text /threads -> /threads_publish + re-query" : "not targeted",
-          },
+          plan: dryRunPlan(content),
           content: {
             text: content.text,
+            title: content.title,
             image_url: content.image_url,
             targets: content.targets,
           },
         });
       }
 
-      const outcome = await publishMeta(env, content);
+      const outcome = await publishTargets(env, content);
       return json(
         {
           ...outcome,
           request: {
             text: content.text,
+            title: content.title,
             image_url: content.image_url,
             targets: content.targets,
           },
