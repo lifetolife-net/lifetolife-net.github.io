@@ -2,6 +2,8 @@
 
 Last updated: 2026-08-14 (KST)
 
+> Global channel status is maintained in `docs/global-distribution-progress.md`. This file remains the detailed WordPress.com implementation record.
+
 ## Status
 
 WordPress.com distribution channel is operational through both ChatGPT's WordPress.com connector and an independent terminal/MCP client.
