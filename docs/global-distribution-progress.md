@@ -72,7 +72,7 @@ Blogger automation was verified on 2026-08-14.
 - Test post title: `LifeToLife Blogger auto-publishing test`
 - Returned post ID: `3206693250991989192`
 - Returned status: `LIVE`
-- Returned URL: `https://lifetolife-net.blogspot.com/2026/08/lifetolifeglobal-wordpress-test-placeholder`
+- Returned URL: `https://lifetolife-net.blogspot.com/2026/08/lifetolife-blogger-auto-publishing-test.html`
 - Verification post cleanup: deleted successfully after validation on 2026-08-14.
 
 Conclusion: Blogger's API publishing path works and is ready for Distribution Agent integration. The OAuth app is still in Google's Testing lifecycle, so long-lived unattended operation must account for that lifecycle before production deployment.
