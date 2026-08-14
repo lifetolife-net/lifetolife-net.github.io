@@ -21,9 +21,9 @@ This document is the canonical progress record for LifeToLife's global distribut
 | Pinterest | LifeToLife | Open | Trial API access requested | **Pending approval** | Wait for Trial access approval, then verify actual pin creation |
 | Bluesky | `@lifetolife-net.bsky.social` | Open | App Password + AT Protocol API operational | **Verified** | Consider moving handle to `@lifetolife.net`; integrate into Distribution Agent |
 | Blogger | LifeToLife / `lifetolife-net` | Open | Blogger API + Desktop OAuth operational | **Verified** | Integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
-| Facebook | Page: `Life to Life` | Open | Connected through Meta Business portfolio | Not yet verified | Verify Meta API publishing path |
-| Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path |
-| Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path |
+| Facebook | Page: `Life to Life` | Open | Meta Developer App `LifeToLife Distribution` created; required Page permissions granted, but `/me/accounts` currently returns an empty list | Not yet verified | Resolve Facebook Page access / Business Portfolio mapping, then verify actual API post |
+| Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path after Facebook Page access is resolved |
+| Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path after Facebook/Instagram |
 | YouTube | `@lifetolife_net` | Open | YouTube Data API v3 + OAuth operational; persistent private upload verified through API and YouTube Studio | **Verified** | Integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
 
 ## Verified channels
@@ -116,6 +116,14 @@ The LifeToLife Meta-side account structure is open:
 - Facebook Page: `Life to Life`
 - Instagram: existing promotional account converted to Business and connected to the LifeToLife portfolio
 - Threads: profile created from the connected Instagram account
+- Meta Developer App: `LifeToLife Distribution` created on 2026-08-14
+- Facebook use case: `Manage everything on your Page` / page management use case configured
+- Graph API Explorer permissions confirmed through `GET /me/permissions`: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, and `public_profile` all returned `granted`
+- Facebook Page discovery blocker: `GET /me/accounts` returned an empty `data` array despite the required Page permissions being granted
+- `Get Page Access Token` was attempted, but a subsequent `GET /me?fields=id,name` still resolved to the personal Facebook user rather than the `Life to Life` Page
+- A Meta Business Suite access attempt also encountered a generic request-completion error during troubleshooting
+
+Current interpretation: the immediate blocker is the mapping/access relationship between the authenticated Facebook user, the `Life to Life` Page, and the `LifeToLife` Business Portfolio, rather than missing Graph API permissions. Do not repeat the permission-setup steps at the next session unless new evidence indicates they were revoked.
 
 Account connection alone is not considered publishing verification. Facebook, Instagram, and Threads remain **automation unverified** until API-created content succeeds and persists.
 
@@ -174,6 +182,7 @@ As of 2026-08-14:
 
 1. Keep YouTube verification video `llXXvCyOMiw` private for now as the persistence reference.
 2. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
-3. Verify the next Meta auto-publishing channel.
-4. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
-5. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
+3. Meta Facebook verification is paused at the Page discovery/access-mapping blocker. Next Meta session should start from resolving why `/me/accounts` is empty despite granted Page permissions; do not redo app creation or permission setup.
+4. After Facebook Page discovery is resolved, verify Facebook actual post creation first, then Instagram, then Threads.
+5. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
+6. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
