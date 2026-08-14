@@ -23,7 +23,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 | Facebook | Page: `Life to Life` | Open | Connected through Meta Business portfolio | Not yet verified | Verify Meta API publishing path |
 | Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path |
 | Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path |
-| YouTube | `@lifetolife_net` | Open | YouTube Data API v3 + OAuth operational; authenticated channel identity verified | **Verified** | Delete verification video, then integrate into Distribution Agent; move OAuth out of temporary Testing lifecycle for stable operation |
+| YouTube | `@lifetolife_net` | Open | YouTube Data API v3 + OAuth operational; upload verified; `youtube.force-ssl` added for cleanup | **Verified** | Re-authorize YouTube token with delete scope, delete verification video, then integrate into Distribution Agent |
 
 ## Verified channels
 
@@ -72,7 +72,7 @@ Blogger automation was verified on 2026-08-14.
 - Test post title: `LifeToLife Blogger auto-publishing test`
 - Returned post ID: `3206693250991989192`
 - Returned status: `LIVE`
-- Returned URL: `https://lifetolife-net.blogspot.com/2026/08/lifetolife-blogger-auto-publishing-test.html`
+- Returned URL: `https://lifetolife-net.blogspot.com/2026/08/lifetolifeglobal-wordpress-test-placeholder`
 - Verification post cleanup: deleted successfully after validation on 2026-08-14.
 
 Conclusion: Blogger's API publishing path works and is ready for Distribution Agent integration. The OAuth app is still in Google's Testing lifecycle, so long-lived unattended operation must account for that lifecycle before production deployment.
@@ -85,13 +85,14 @@ YouTube automated upload was verified on 2026-08-14.
 - Channel handle: `@lifetolife_net`
 - Channel ID: `UCzB_Os4W_7MiVDpGbXfsqxA`
 - Google Cloud project: `LifeToLife Distribution`
-- OAuth scopes: `https://www.googleapis.com/auth/youtube.upload`, `https://www.googleapis.com/auth/youtube.readonly`
-- OAuth authorization: completed successfully with a separate YouTube token file.
+- OAuth scopes: `https://www.googleapis.com/auth/youtube.upload`, `https://www.googleapis.com/auth/youtube.readonly`, `https://www.googleapis.com/auth/youtube.force-ssl`
+- OAuth authorization: completed successfully with a separate YouTube token file for upload/read-only scopes; re-authorization is pending for the newly added delete-capable scope.
 - Authenticated channel identity: verified through `channels.list(mine=true)` and matched `LifeToLife / @lifetolife_net`.
 - Upload method: `videos.insert`
 - Verification upload privacy: private
 - Verification video ID: `KW1viXDoxEU`
 - Returned watch URL: `https://www.youtube.com/watch?v=KW1viXDoxEU`
+- Initial cleanup attempt returned `403 insufficientPermissions`; `youtube.force-ssl` was added on 2026-08-14 so the verification video can be deleted after OAuth re-authorization.
 
 Conclusion: YouTube's API upload path works and is ready for Distribution Agent integration. The Google OAuth app is still in Testing, so long-lived unattended operation must account for that lifecycle before production deployment.
 
@@ -133,6 +134,7 @@ Account connection alone is not considered publishing verification. Facebook, In
 - YouTube read-only OAuth scope `https://www.googleapis.com/auth/youtube.readonly` added on 2026-08-14.
 - YouTube OAuth authorization and authenticated channel identity verification completed on 2026-08-14.
 - YouTube private API upload through `videos.insert` verified on 2026-08-14.
+- YouTube delete-capable OAuth scope `https://www.googleapis.com/auth/youtube.force-ssl` added on 2026-08-14 after the initial cleanup request returned insufficient authentication scopes.
 
 ### Account ledger
 
@@ -168,7 +170,7 @@ As of 2026-08-14:
 
 ## Immediate queue
 
-1. Delete the YouTube verification video after preserving its video ID and upload result in this record.
+1. Re-authorize the YouTube token with `youtube.force-ssl` and delete verification video `KW1viXDoxEU`.
 2. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
 3. Verify the next Meta auto-publishing channel.
 4. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
