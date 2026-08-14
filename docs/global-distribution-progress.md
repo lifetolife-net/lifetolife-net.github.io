@@ -23,7 +23,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 | Facebook | Page: `Life to Life` | Open | Connected through Meta Business portfolio | Not yet verified | Verify Meta API publishing path |
 | Instagram | Existing LifeToLife promotional account | Business account; connected to LifeToLife portfolio | Meta Business connection complete | Not yet verified | Verify Instagram publishing API path |
 | Threads | Profile created from connected Instagram account | Open | Meta / Threads automation path not yet verified | Not yet verified | Verify Threads publishing API path |
-| YouTube | `@lifetolife_net` | Open | YouTube Data API v3 prepared; `youtube.upload` + `youtube.readonly` OAuth scopes added | Not yet verified | Complete OAuth authorization, verify channel identity, then upload a private test video |
+| YouTube | `@lifetolife_net` | Open | YouTube Data API v3 + OAuth operational; authenticated channel identity verified | Not yet verified | Upload a private test video through `videos.insert` |
 
 ## Verified channels
 
@@ -101,12 +101,15 @@ Account connection alone is not considered publishing verification. Facebook, In
 
 ### YouTube
 
+- Channel title: `LifeToLife`
 - Channel handle: `@lifetolife_net`
-- Channel exists and is reserved for LifeToLife distribution.
+- Channel ID: `UCzB_Os4W_7MiVDpGbXfsqxA`
 - YouTube Data API v3 is prepared in the `LifeToLife Distribution` Google Cloud project.
 - OAuth scope `https://www.googleapis.com/auth/youtube.upload` was added on 2026-08-14.
 - OAuth scope `https://www.googleapis.com/auth/youtube.readonly` was added on 2026-08-14.
-- Automated upload remains unverified until OAuth authorization, channel identity verification, and an API-created test upload succeed.
+- OAuth authorization completed successfully on 2026-08-14 using a separate YouTube token file.
+- Authenticated channel identity was verified through `channels.list(mine=true)` and matched `LifeToLife / @lifetolife_net`.
+- Automated upload remains unverified until a private API-created test upload succeeds.
 
 ## Distribution infrastructure
 
@@ -122,6 +125,7 @@ Account connection alone is not considered publishing verification. Facebook, In
 - Blogger verification post deleted after successful validation on 2026-08-14.
 - YouTube upload OAuth scope `https://www.googleapis.com/auth/youtube.upload` added on 2026-08-14.
 - YouTube read-only OAuth scope `https://www.googleapis.com/auth/youtube.readonly` added on 2026-08-14.
+- YouTube OAuth authorization and authenticated channel identity verification completed on 2026-08-14.
 
 ### Account ledger
 
@@ -158,6 +162,6 @@ As of 2026-08-14:
 ## Immediate queue
 
 1. Keep Pinterest in approval-wait state; do not spend time repeatedly checking it manually.
-2. Complete YouTube OAuth authorization, verify the authenticated channel is `@lifetolife_net`, and perform a private test upload.
+2. Upload a private YouTube test video through `videos.insert` to complete automated upload verification.
 3. Continue integrating each successfully verified publisher into the common LifeToLife Distribution Agent.
 4. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
