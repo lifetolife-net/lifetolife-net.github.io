@@ -19,41 +19,49 @@ if ! npx wrangler whoami >/dev/null 2>&1; then
   npx wrangler login
 fi
 
+KV_ID_FILE="$TMP_DIR/kv-id.txt"
+: > "$KV_ID_FILE"
+
 npx wrangler kv namespace list > "$TMP_DIR/kv-list.json"
-KV_ID="$(python3 - "$TMP_DIR/kv-list.json" "$NAMESPACE_SUFFIX" <<'PY'
+python3 - "$TMP_DIR/kv-list.json" "$NAMESPACE_SUFFIX" "$KV_ID_FILE" <<'PY'
 import json, pathlib, sys
-path = pathlib.Path(sys.argv[1])
+src = pathlib.Path(sys.argv[1])
 suffix = sys.argv[2]
-raw = path.read_text(encoding='utf-8')
+out = pathlib.Path(sys.argv[3])
 try:
-    items = json.loads(raw)
+    items = json.loads(src.read_text(encoding="utf-8"))
 except Exception:
     items = []
 for item in items:
-    title = str(item.get('title') or '')
-    if title == suffix or title.endswith('-' + suffix):
-        print(item.get('id') or '')
+    title = str(item.get("title") or "")
+    if title == suffix or title.endswith("-" + suffix):
+        value = str(item.get("id") or "").strip()
+        if value:
+            out.write_text(value, encoding="utf-8")
         break
 PY
-)"
+
+KV_ID="$(cat "$KV_ID_FILE")"
 
 if [[ -z "$KV_ID" ]]; then
   CREATE_OUT="$TMP_DIR/kv-create.txt"
   npx wrangler kv namespace create TOKEN_STATE | tee "$CREATE_OUT"
-  KV_ID="$(python3 - "$CREATE_OUT" <<'PY'
-import re, pathlib, sys
-text = pathlib.Path(sys.argv[1]).read_text(encoding='utf-8')
+  python3 - "$CREATE_OUT" "$KV_ID_FILE" <<'PY'
+import pathlib, re, sys
+src = pathlib.Path(sys.argv[1])
+out = pathlib.Path(sys.argv[2])
+text = src.read_text(encoding="utf-8", errors="replace")
 patterns = [
-    r'\bid\s*=\s*["\']([0-9a-fA-F]{16,64})["\']',
-    r'\bID\b[^0-9a-fA-F]+([0-9a-fA-F]{16,64})',
+    r"\bid\s*=\s*[\"']([0-9a-fA-F]{16,64})[\"']",
+    r"\bID\b[^0-9a-fA-F]+([0-9a-fA-F]{16,64})",
 ]
 for pattern in patterns:
-    m = re.search(pattern, text)
-    if m:
-        print(m.group(1))
+    match = re.search(pattern, text)
+    if match:
+        out.write_text(match.group(1), encoding="utf-8")
         break
 PY
-)"
+  KV_ID="$(cat "$KV_ID_FILE")"
 fi
 
 if [[ -z "$KV_ID" ]]; then
@@ -89,11 +97,11 @@ printf '\n'
 python3 - "$TMP_DIR/health.json" <<'PY'
 import json, pathlib, sys
 obj = json.loads(pathlib.Path(sys.argv[1]).read_text())
-if obj.get('mode') != 'verified-path-v6':
-    raise SystemExit('Expected verified-path-v6 health response')
-if obj.get('wordpress_token_state_bound') is not True:
-    raise SystemExit('TOKEN_STATE binding is still false')
-print('TOKEN_STATE binding: confirmed')
+if obj.get("mode") != "verified-path-v6":
+    raise SystemExit("Expected verified-path-v6 health response")
+if obj.get("wordpress_token_state_bound") is not True:
+    raise SystemExit("TOKEN_STATE binding is still false")
+print("TOKEN_STATE binding: confirmed")
 PY
 
 printf '\n[4/5] Verify WordPress refresh-token rotation persistence without creating content\n'
@@ -112,22 +120,22 @@ import json, pathlib, sys
 path = pathlib.Path(sys.argv[1])
 kv_id = sys.argv[2]
 obj = json.loads(path.read_text())
-if not obj.get('ok'):
-    print('WordPress TOKEN_STATE integration: NOT VERIFIED')
-    print('Response saved at:', path)
+if not obj.get("ok"):
+    print("WordPress TOKEN_STATE integration: NOT VERIFIED")
+    print("Response saved at:", path)
     raise SystemExit(1)
-ver = obj.get('verification') or {}
-first = obj.get('first') or {}
-second = obj.get('second') or {}
-print('WordPress TOKEN_STATE integration: VERIFIED')
-print('KV namespace ID:', kv_id)
-print('KV binding:', ver.get('token_state_bound'))
-print('Second refresh source:', second.get('source'))
-print('KV read confirmed:', ver.get('kv_read_confirmed'))
-print('First token rotated:', first.get('refresh_token_rotated'))
-print('First token persisted:', first.get('refresh_token_persisted'))
-print('Second token persisted:', second.get('refresh_token_persisted'))
-print('No WordPress post was created by this script.')
+ver = obj.get("verification") or {}
+first = obj.get("first") or {}
+second = obj.get("second") or {}
+print("WordPress TOKEN_STATE integration: VERIFIED")
+print("KV namespace ID:", kv_id)
+print("KV binding:", ver.get("token_state_bound"))
+print("Second refresh source:", second.get("source"))
+print("KV read confirmed:", ver.get("kv_read_confirmed"))
+print("First token rotated:", first.get("refresh_token_rotated"))
+print("First token persisted:", first.get("refresh_token_persisted"))
+print("Second token persisted:", second.get("refresh_token_persisted"))
+print("No WordPress post was created by this script.")
 PY
 
 printf '\nSaved WordPress token-state verification: %s\n' "$RESPONSE_FILE"
