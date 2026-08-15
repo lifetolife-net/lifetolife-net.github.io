@@ -10,7 +10,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 - Canonical transformation policy: `docs/global-distribution-platform-native-policy.md`.
 - Track **Auto Publish** and **Assisted Manual** channels separately.
 - `Auto Publish`: the Distribution Agent performs platform-native transformation, final provider API publish/upload, and verification where possible.
-- `Assisted Manual`: the Agent prepares the complete platform-native package; the human performs only the final publish action.
+- `Assisted Manual`: the Agent prepares the complete platform-native package, but the human performs only the final publish action.
 - A channel is **Verified** only after an automated publish/upload succeeds and remains authoritative/re-readable where the platform permits it.
 - Secrets never belong in GitHub or the Google Sheets ledger.
 - Every distribution milestone and top-level operating-policy change must be mirrored here and in `LifeToLife_Global_Distribution_Account_Ledger`.
@@ -40,7 +40,7 @@ Therefore the current practical distribution network is **11 usable publishing c
 Existing pending work may finish if the provider approves it:
 
 - **Pinterest** — Trial API approval pending.
-- **Hatena Blog** — account exists; blog-opening manual review pending. Distribution Agent adapter is prepared but not deployed.
+- **Hatena Blog** — account exists; blog-opening manual review pending. Distribution Agent adapter is prepared but not yet verified.
 
 If both pending channels become operational, the practical network can reach **13 channels without opening any new platform project**.
 
@@ -55,7 +55,7 @@ If both pending channels become operational, the practical network can reach **1
 
 **China-local platform expansion is intentionally out of scope for this phase.**
 
-China is a meaningful separate ecosystem, but entering it is not treated as a missing checkbox in a generic global distribution plan. Current official developer onboarding for major Chinese platforms involves substantially more platform-specific qualification and review than the existing LifeToLife network. For example, Douyin's current open-platform onboarding is institution-oriented and states that individual developer admission is not currently open; Kuaishou's developer onboarding requires qualification review including enterprise, legal-representative and administrator information. Both platforms expose content publishing APIs, so the limitation is not technical feasibility but the additional operating/compliance layer.
+China is a meaningful separate ecosystem, but entering it is not treated as a missing checkbox in a generic global distribution plan. Current official developer onboarding for major Chinese platforms involves substantially more platform-specific qualification and review than the existing LifeToLife network. Douyin and Kuaishou both expose publishing APIs, but the additional developer/business qualification and review layer makes China a separate future expansion project rather than part of the current baseline.
 
 Reopen China only if there is evidence of real Chinese-market demand or a suitable local/organizational operating path. Until then, no Douyin, Kuaishou, WeChat, Weibo, Xiaohongshu or Bilibili expansion work is required.
 
@@ -101,8 +101,47 @@ Current Assisted Manual packages:
 - Provider response is expected after review.
 - Prepared source wrapper: `workers/distribution-agent/worker-v8-hatena.js`.
 - Prepared setup script: `workers/distribution-agent/setup-hatena.sh`.
-- The Hatena wrapper has **not** been deployed to production.
+- Hatena credentials are not connected and Hatena publishing remains unverified.
 - If the blog-opening review is approved, connect the blog API key, run non-posting credential verification, then create one real test entry and re-query the returned member URI.
+
+## Automatic distribution trigger — source prepared, production deploy pending
+
+The next stage is no longer platform expansion. It is automatic execution of approved distribution jobs.
+
+Prepared components:
+
+- Canonical trigger wrapper: `workers/distribution-agent/worker-v8-trigger.js`.
+- Canonical config now points to `worker-v8-trigger.js`.
+- Cloudflare Cron configured in `wrangler.toml`: `*/5 * * * *` (UTC).
+- Queue: `distribution/queue/*.json`.
+- Job schema: `distribution/JOB_SCHEMA.md`.
+- Safe example: `distribution/examples/job-v1.example.json`.
+- Safe deployment helper: `workers/distribution-agent/deploy-trigger.sh`.
+
+Trigger behavior:
+
+1. Every five minutes the scheduled handler reads the public GitHub queue.
+2. Only jobs with `schema = lifetolife.distribution-job.v1`, `status = ready`, and `approval = publish` are executable.
+3. Queue jobs must already contain **platform-native packages per destination**. The trigger is an execution boundary, not a blind cross-posting transformer.
+4. Current automatic targets are the eight Verified channels only: Facebook, Instagram, Threads, Bluesky, Blogger, WordPress.com, Tumblr, YouTube.
+5. X, TikTok, and Reddit packages may be stored in the same job as `assisted_manual`, but the trigger never posts them automatically.
+6. Per-target execution state is stored in the existing SQLite-backed Durable Object namespace.
+7. Once a `job_id + target` succeeds, later edits to that queue file cannot republish it. Intentional republication requires a new `job_id`.
+8. Failed targets may retry, while already-successful targets are skipped.
+9. The trigger processes at most ten queue JSON files per scheduled run.
+10. Queue files must never contain secrets.
+
+The queue currently contains **no runnable JSON job**. Therefore deploying the trigger wrapper does not itself create any post.
+
+### Trigger deployment state
+
+- Source: **prepared and committed**.
+- `wrangler.toml`: **updated to trigger wrapper + 5-minute Cron**.
+- Production Worker: **not yet redeployed with this trigger build**.
+- Current live Version ID therefore remains `42bd43fb-f786-4d25-82eb-8895490f0cd9` until the deployment step is executed.
+- After deployment, `/health` should report `distribution_trigger: github-queue-cron-v1`.
+- Authenticated manual execution route: `POST /v1/trigger/run`.
+- Authenticated job-state route: `GET /v1/trigger/status?job_id=...`.
 
 ## Tumblr verification — 2026-08-15
 
@@ -119,15 +158,18 @@ Tumblr is the eighth fully verified Auto Publish target.
 
 - Worker: `lifetolife-distribution-agent`
 - Production endpoint: `https://distribution-api.lifetolife.net`
-- Latest deployed Version ID: `42bd43fb-f786-4d25-82eb-8895490f0cd9`
+- Latest deployed Version ID: `42bd43fb-f786-4d25-82eb-8895490f0cd9` (**pre-trigger deployment**)
 - Base v8 source: `workers/distribution-agent/worker-v8.js`
 - Tumblr publish layer: `workers/distribution-agent/worker-v8-tumblr-publish.js`
 - Tumblr uint64-safe layer: `workers/distribution-agent/worker-v8-tumblr-safe-verify.js`
-- Prepared Hatena source entry: `workers/distribution-agent/worker-v8-hatena.js` (**not deployed**)
+- Hatena layer: `workers/distribution-agent/worker-v8-hatena.js` (prepared, unverified)
+- Current canonical source entry: `workers/distribution-agent/worker-v8-trigger.js` (**prepared, deploy pending**)
 - Canonical config: `workers/distribution-agent/wrangler.toml`
 - Common JSON route: `POST /v1/publish`
 - YouTube multipart route: `POST /v1/publish/youtube`
-- WordPress/Tumblr auth-state backend: SQLite-backed Durable Object `WordPressAuthState`, binding `WPCOM_AUTH_STATE`
+- Trigger run route after deployment: `POST /v1/trigger/run`
+- Trigger state route after deployment: `GET /v1/trigger/status?job_id=...`
+- WordPress/Tumblr/trigger state backend: SQLite-backed Durable Object `WordPressAuthState`, binding `WPCOM_AUTH_STATE`
 - Integrated and verified targets: `facebook`, `instagram`, `threads`, `blogger`, `bluesky`, `wordpress`, `youtube`, `tumblr`
 
 ### Verified adapter paths
@@ -152,11 +194,14 @@ As of 2026-08-15 KST:
 - **Potential near-term total without new expansion: 13** if both pending channels become operational.
 - **New-platform expansion: frozen.**
 - **China-local platform expansion: intentionally out of scope.**
+- **Automatic queue trigger: source/config prepared; production deployment pending.**
 
 ## Next work
 
-1. Operate and harden the existing 11-channel distribution workflow.
-2. Complete Pinterest only if its existing Trial application is approved.
-3. Complete Hatena only if its existing blog-opening review is approved.
-4. Do **not** open Dailymotion, OK.ru, China-local platforms, or other new endpoints unless future evidence shows a clear distribution need.
-5. Shift effort from platform-count expansion to actual content distribution, measurement, discovery, conversion and monetization.
+1. Deploy the prepared trigger wrapper and confirm `/health` reports the trigger metadata. No runnable queue job exists, so this deployment is non-posting.
+2. Create one deliberately safe first queue job and verify automatic execution + Durable Object deduplication.
+3. Thereafter, when content is approved, ChatGPT/Distribution Agent prepares per-platform native packages and commits a `ready + publish` queue job; the Cron trigger performs the eight-channel automatic execution where that content type has a valid package.
+4. Complete Pinterest only if its existing Trial application is approved.
+5. Complete Hatena only if its existing blog-opening review is approved.
+6. Do **not** open Dailymotion, OK.ru, China-local platforms, or other new endpoints unless future evidence shows a clear distribution need.
+7. Shift effort from platform-count expansion to actual content distribution, measurement, discovery, conversion and monetization.
