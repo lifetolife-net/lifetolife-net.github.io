@@ -49,7 +49,7 @@ The reconstructed 2026 candidate roster is maintained in:
 
 The 50-channel portfolio is strategic; it is not a requirement to automate the final posting action on every platform.
 
-## Current automated foundation — 7 Verified
+## Current automated foundation — 8 Verified
 
 | Channel | Public account / handle | Mode | State |
 |---|---|---|---|
@@ -60,8 +60,23 @@ The 50-channel portfolio is strategic; it is not a requirement to automate the f
 | Facebook | Page `Life to Life` | Auto Publish | **Verified + Agent integrated** |
 | Instagram | `@lifetolife_net` | Auto Publish | **Verified + Agent integrated** |
 | Threads | `@lifetolife_net` | Auto Publish | **Verified + Agent integrated** |
+| Tumblr | `lifetolife-net` | Auto Publish | **Verified + Agent integrated + refresh-aware OAuth2** |
 
 Pinterest remains **Trial API approval pending** and is not counted as Verified.
+
+## Tumblr verification — 2026-08-15
+
+Tumblr is the eighth fully verified Auto Publish target.
+
+- OAuth2 authorization-code flow completed with scopes `basic write offline_access`.
+- Durable Object state contains both access and refresh tokens; secret values are never returned.
+- Access-token refresh path is implemented using the stored refresh token.
+- NPF post creation succeeded for blog `lifetolife-net`.
+- Verified test post ID: `825010270001856512`.
+- Verified permalink: `https://www.tumblr.com/blog/view/lifetolife-net/825010270001856512`.
+- Authenticated post re-query succeeded and returned NPF `blocks` with two content blocks.
+- Tumblr post IDs are unsigned 64-bit integers. The initial verifier compared a JSON-parsed numeric re-query ID with the exact create-response ID; JavaScript number precision rounded the re-query value and produced a false `requery_succeeded: false` even though the GET itself succeeded.
+- A uint64-safe verification layer is committed so successful authenticated GET-by-exact-created-ID is the verification proof; it does not rely on unsafe numeric equality.
 
 ## Assisted Manual channels
 
@@ -94,59 +109,25 @@ The user performs the final Reddit post for now.
 ## Core portfolio changes on 2026-08-15
 
 - **LinkedIn removed from Core** and moved to Backup/deprioritized.
-- **Vimeo promoted to Core** as a professional video distribution candidate.
 - **Reddit remains Core**, classified as `Assisted Manual · owned-subreddit SEO`.
 - **Dailymotion is deprioritized** because ease of automation alone does not justify Core priority when discovery value is weak.
-- **Tumblr is the leading candidate for the next fully automated channel** because it combines official posting API support with tags/reblogs and persistent blog-style content.
-
-## Channels under active comparison for the next fully automated integration
-
-### Tumblr
-
-- Official post creation API exists.
-- Supports text/media/blog-style distribution with native discovery through tags/reblogs.
-- Current leading candidate for the next automated channel.
-
-### Vimeo
-
-- Official upload API exists.
-- Useful as an additional video-distribution/search asset, but discovery value is weaker than Tumblr.
-- Keep Core; do not prioritize ahead of Tumblr without stronger evidence.
-
-### Dailymotion
-
-- Official video upload/publish API exists.
-- Technically easy to integrate, but currently deprioritized because automation simplicity is not enough to justify channel priority.
-
-### Telegram Channel
-
-- Bot API is low-friction.
-- Discovery value is weak without an existing subscriber base.
-- Do not prioritize merely because automation is easy.
-
-### Mastodon
-
-- Official status publishing API exists.
-- A v8 adapter and setup helper were prepared in GitHub.
-- Activation is paused because instance policy fit and discovery value must be justified first.
-- The adapter has not been deployed or verified and does not count toward the Verified total.
-
-### LinkedIn
-
-- Official Posts API exists.
-- Removed from Core and deprioritized.
-- No current implementation work planned.
+- **Tumblr completed full Auto Publish verification** and is now an operating channel rather than a candidate.
+- Vimeo remains a lower-priority video candidate and is not the default next integration.
+- Mastodon activation remains paused pending stronger policy/discovery justification.
+- Telegram remains low priority because discovery is weak without an existing subscriber base.
 
 ## Distribution Agent infrastructure
 
 - Worker: `lifetolife-distribution-agent`
 - Production endpoint: `https://distribution-api.lifetolife.net`
-- Canonical source: `workers/distribution-agent/worker-v8.js`
+- Base v8 source: `workers/distribution-agent/worker-v8.js`
+- Tumblr publish layer: `workers/distribution-agent/worker-v8-tumblr-publish.js`
+- Current uint64-safe entry layer: `workers/distribution-agent/worker-v8-tumblr-safe-verify.js`
 - Canonical config: `workers/distribution-agent/wrangler.toml`
 - Common JSON route: `POST /v1/publish`
 - YouTube multipart route: `POST /v1/publish/youtube`
-- WordPress auth-state backend: SQLite-backed Durable Object `WordPressAuthState`, binding `WPCOM_AUTH_STATE`
-- Integrated and verified targets: `facebook`, `instagram`, `threads`, `blogger`, `bluesky`, `wordpress`, `youtube`
+- WordPress/Tumblr auth-state backend: SQLite-backed Durable Object `WordPressAuthState`, binding `WPCOM_AUTH_STATE`
+- Integrated and verified targets: `facebook`, `instagram`, `threads`, `blogger`, `bluesky`, `wordpress`, `youtube`, `tumblr`
 - Prepared but paused/unverified adapter: `mastodon`
 
 ### Verified adapter paths
@@ -158,13 +139,13 @@ The user performs the final Reddit post for now.
 - Bluesky: App Password + stable DID -> `createSession` -> `createRecord` -> `getRecord`
 - WordPress.com: OAuth 2.1 + Durable Object auth state -> MCP initialize -> draft `posts.create` -> `posts.get`
 - YouTube: Google OAuth refresh -> resumable `videos.insert` -> binary upload -> `videos.list` processing verification
+- Tumblr: OAuth2 `offline_access` -> refresh-aware NPF `POST /v2/blog/{blog}/posts` -> authenticated `GET /v2/blog/{blog}/posts/{id}`; uint64-safe verification uses successful GET-by-exact-created-ID rather than JavaScript numeric ID equality
 
 ## WordPress.com v8 hardening state
 
 WordPress.com OAuth state is stabilized on a SQLite-backed Durable Object.
 
-- Canonical `wrangler.toml` points to `worker-v8.js`.
-- `WPCOM_AUTH_STATE` is bound to `WordPressAuthState`.
+- `WPCOM_AUTH_STATE` remains bound to `WordPressAuthState` through the current v8 entry layers.
 - Fresh OAuth state was seeded from a new PKCE flow.
 - Durable state retained both refresh and access token state.
 - Consecutive auth checks used the Durable Object cache.
@@ -177,7 +158,7 @@ Detailed history remains in `docs/wordpress-automation-progress.md`.
 As of 2026-08-15 KST:
 
 - Canonical candidates: **50 = Core 15 + Backup 35**.
-- Auto Publish Verified: **7** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads.
+- Auto Publish Verified: **8** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads, Tumblr.
 - API approval pending: **1** — Pinterest.
 - Assisted Manual explicitly adopted: **3** — X, TikTok, Reddit.
 - Prepared but paused/unverified adapter: **Mastodon**.
@@ -190,10 +171,10 @@ Choose the next fully automated channel by:
 
 Do not choose a platform merely because its API is easy.
 
-Immediate priority:
+Current queue:
 
-1. Tumblr
-2. Vimeo
-3. Pinterest immediately if Trial approval arrives
+1. Operate and harden the eight verified Auto Publish channels.
+2. Pinterest moves immediately into implementation when Trial approval arrives.
+3. Re-rank the remaining candidates before opening another account; Vimeo, Dailymotion, Telegram, Mastodon, and LinkedIn should not be promoted merely because their APIs are easy.
 
-X, TikTok, and Reddit are Agent-generated, human-posted channels. LinkedIn and Dailymotion are deprioritized. All future channel implementations must comply with `docs/global-distribution-platform-native-policy.md`.
+X, TikTok, and Reddit are Agent-generated, human-posted channels. All future channel implementations must comply with `docs/global-distribution-platform-native-policy.md`.
