@@ -1,0 +1,79 @@
+{
+  "schema": "lifetolife.distribution-job.v1",
+  "job_id": "example-do-not-publish",
+  "status": "template",
+  "approval": "none",
+  "source": {
+    "title": "Example source",
+    "canonical_url": "https://lifetolife.net/example"
+  },
+  "auto_publish": {
+    "facebook": {
+      "type": "json",
+      "body": {
+        "text": "Facebook-native example copy"
+      }
+    },
+    "instagram": {
+      "type": "json",
+      "body": {
+        "text": "Instagram-native example caption",
+        "image_url": "https://lifetolife.net/example.jpg"
+      }
+    },
+    "threads": {
+      "type": "json",
+      "body": {
+        "text": "Threads-native example copy"
+      }
+    },
+    "bluesky": {
+      "type": "json",
+      "body": {
+        "text": "Bluesky-native example copy"
+      }
+    },
+    "blogger": {
+      "type": "json",
+      "body": {
+        "title": "Blogger-native title",
+        "text": "Blogger-native article body"
+      }
+    },
+    "wordpress": {
+      "type": "json",
+      "body": {
+        "title": "WordPress-native title",
+        "text": "WordPress-native article body"
+      }
+    },
+    "tumblr": {
+      "type": "json",
+      "body": {
+        "title": "Tumblr-native title",
+        "text": "Tumblr-native post body"
+      }
+    },
+    "youtube": {
+      "type": "youtube_video",
+      "video_url": "https://lifetolife.net/example.mp4",
+      "filename": "example.mp4",
+      "title": "YouTube-native title",
+      "description": "YouTube-native description",
+      "privacy_status": "private"
+    }
+  },
+  "assisted_manual": {
+    "x": {
+      "text": "X-ready example copy"
+    },
+    "tiktok": {
+      "caption": "TikTok-ready example caption",
+      "hashtags": ["LifeToLife"]
+    },
+    "reddit": {
+      "title": "Reddit-ready example title",
+      "body": "Reddit-ready substantial body"
+    }
+  }
+}
