@@ -11,11 +11,12 @@ fi
 
 npx wrangler deploy
 
-KEY="$(cat "$KEY_FILE")"
-RESULT="$(curl -fsS -X POST https://distribution-api.lifetolife.net/v1/publish \
-  -H "Authorization: Bearer $KEY" \
-  -H "Content-Type: application/json" \
-  --data-binary @- <<'JSON'
+PAYLOAD_FILE="$(mktemp)"
+DRY_FILE="$(mktemp)"
+LIVE_FILE="$(mktemp)"
+trap 'rm -f "$PAYLOAD_FILE" "$DRY_FILE" "$LIVE_FILE"' EXIT
+
+cat >"$PAYLOAD_FILE" <<'JSON'
 {
   "targets": ["tumblr"],
   "tumblr_blog_identifier": "lifetolife-net",
@@ -24,17 +25,60 @@ RESULT="$(curl -fsS -X POST https://distribution-api.lifetolife.net/v1/publish \
   "tumblr_tags": ["LifeToLife"]
 }
 JSON
-)"
+
+KEY="$(cat "$KEY_FILE")"
+DRY_STATUS="$(curl -sS -o "$DRY_FILE" -w '%{http_code}' -X POST https://distribution-api.lifetolife.net/v1/publish \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  --data-binary "@$PAYLOAD_FILE" \
+  --data-urlencode '' 2>/dev/null || true)"
+
+# The --data-urlencode sentinel above is intentionally not relied upon; if it caused a malformed request,
+# retry the dry-run cleanly with a generated payload that includes dry_run.
+python3 - "$PAYLOAD_FILE" <<'PY' >"${PAYLOAD_FILE}.dry"
+import json, sys
+p = json.load(open(sys.argv[1]))
+p["dry_run"] = True
+print(json.dumps(p))
+PY
+DRY_STATUS="$(curl -sS -o "$DRY_FILE" -w '%{http_code}' -X POST https://distribution-api.lifetolife.net/v1/publish \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  --data-binary "@${PAYLOAD_FILE}.dry")"
+rm -f "${PAYLOAD_FILE}.dry"
+
+echo "Dry-run HTTP: $DRY_STATUS"
+cat "$DRY_FILE"
+echo
+
+if [[ "$DRY_STATUS" != "200" ]]; then
+  unset KEY
+  echo "Tumblr dry-run failed; no live Tumblr post was attempted." >&2
+  exit 1
+fi
+
+LIVE_STATUS="$(curl -sS -o "$LIVE_FILE" -w '%{http_code}' -X POST https://distribution-api.lifetolife.net/v1/publish \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  --data-binary "@$PAYLOAD_FILE")"
 unset KEY
 
-python3 - "$RESULT" <<'PY'
+echo "Live publish HTTP: $LIVE_STATUS"
+cat "$LIVE_FILE"
+echo
+
+python3 - "$LIVE_FILE" "$LIVE_STATUS" <<'PY'
 import json, sys
-p = json.loads(sys.argv[1])
-print(json.dumps(p, indent=2, ensure_ascii=False))
+status = sys.argv[2]
+try:
+    p = json.load(open(sys.argv[1]))
+except Exception:
+    raise SystemExit("Tumblr response was not valid JSON; HTTP %s" % status)
+
 r = (p.get("results") or {}).get("tumblr") or {}
 v = r.get("verification") or {}
-if not p.get("ok") or not r.get("ok"):
-    raise SystemExit("Tumblr publish verification failed")
+if status != "200" or not p.get("ok") or not r.get("ok"):
+    raise SystemExit("Tumblr publish verification failed; inspect the response above")
 if not v.get("requery_succeeded"):
     raise SystemExit("Tumblr re-query verification failed")
 if v.get("blog_name") != "lifetolife-net":
