@@ -4,12 +4,12 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 WORKER_ORIGIN="https://distribution-api.lifetolife.net"
-WORKERS_DEV_ORIGIN="https://lifetolife-distribution-agent.jisooyoun-cafe.workers.dev"
 AGENT_KEY_FILE="${HOME}/.config/lifetolife/distribution-agent-key"
-REDIRECT_URI="http://127.0.0.1:8765/callback"
+REDIRECT_URI="http://localhost:8765/callback"
 TMP_DIR="$(mktemp -d)"
 CONFIG_FILE="$PWD/wrangler-v8.tmp.toml"
 CALLBACK_PID=""
+SAFE_ERROR_FILE="/tmp/lifetolife-wordpress-oauth-token-error.json"
 
 cleanup() {
   if [[ -n "${CALLBACK_PID:-}" ]]; then
@@ -48,11 +48,10 @@ TOML
 npx wrangler deploy --config "$CONFIG_FILE"
 
 check_v8_health() {
-  local origin="$1"
-  local outfile="$2"
+  local outfile="$TMP_DIR/health.json"
   local attempt
   for attempt in 1 2 3 4 5 6 7 8 9 10; do
-    if curl -fsS "${origin}/health" > "$outfile" 2>/dev/null; then
+    if curl -fsS "${WORKER_ORIGIN}/health" > "$outfile" 2>/dev/null; then
       if python3 - "$outfile" <<'PY'
 import json, pathlib, sys
 obj = json.loads(pathlib.Path(sys.argv[1]).read_text())
@@ -73,13 +72,27 @@ PY
   return 1
 }
 
-check_v8_health "$WORKER_ORIGIN" "$TMP_DIR/health.json"
+check_v8_health
 echo 'v8 Durable Object binding: confirmed'
 
 printf '\n[2/7] Register a fresh WordPress.com OAuth 2.1 public client\n'
+python3 - "$REDIRECT_URI" "$TMP_DIR/registration-request.json" <<'PY'
+import json, pathlib, sys
+redirect_uri = sys.argv[1]
+out = pathlib.Path(sys.argv[2])
+request = {
+    "client_name": "LifeToLife Distribution Agent CLI",
+    "redirect_uris": [redirect_uri],
+    "grant_types": ["authorization_code", "refresh_token"],
+    "response_types": ["code"],
+    "token_endpoint_auth_method": "none",
+}
+out.write_text(json.dumps(request), encoding="utf-8")
+PY
+
 curl -fsS -X POST "https://public-api.wordpress.com/oauth2-1/register" \
   -H 'Content-Type: application/json' \
-  --data "{\"client_name\":\"LifeToLife Distribution Agent CLI\",\"redirect_uris\":[\"${REDIRECT_URI}\"],\"grant_types\":[\"authorization_code\",\"refresh_token\"]}" \
+  --data-binary @"$TMP_DIR/registration-request.json" \
   > "$TMP_DIR/registration.json"
 
 CLIENT_ID="$(python3 - "$TMP_DIR/registration.json" <<'PY'
@@ -88,6 +101,9 @@ obj = json.loads(pathlib.Path(sys.argv[1]).read_text())
 client_id = str(obj.get("client_id") or "").strip()
 if not client_id:
     raise SystemExit("WordPress.com registration returned no client_id")
+method = str(obj.get("token_endpoint_auth_method") or "none")
+if method != "none":
+    raise SystemExit(f"Unexpected token_endpoint_auth_method: {method}")
 print(client_id)
 PY
 )"
@@ -97,8 +113,9 @@ printf '\n[3/7] Start PKCE authorization in the browser\n'
 python3 - "$TMP_DIR" <<'PY'
 import base64, hashlib, pathlib, secrets, sys
 root = pathlib.Path(sys.argv[1])
+# RFC 7636 verifier: 43-128 unreserved characters. token_urlsafe(64) is within range.
 verifier = secrets.token_urlsafe(64)
-challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).decode().rstrip("=")
+challenge = base64.urlsafe_b64encode(hashlib.sha256(verifier.encode("ascii")).digest()).decode("ascii").rstrip("=")
 state = secrets.token_urlsafe(32)
 for name, value in [("verifier", verifier), ("challenge", challenge), ("state", state)]:
     path = root / name
@@ -124,8 +141,9 @@ class Handler(http.server.BaseHTTPRequestHandler):
         code = (params.get("code") or [""])[0]
         state = (params.get("state") or [""])[0]
         error = (params.get("error") or [""])[0]
+        error_description = (params.get("error_description") or [""])[0]
         if error:
-            body = f"WordPress.com authorization failed: {html.escape(error)}"
+            body = f"WordPress.com authorization failed: {html.escape(error)} {html.escape(error_description)}"
             status = 400
         elif not code or state != expected_state:
             body = "WordPress.com authorization response was invalid."
@@ -144,6 +162,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
 
+# Bind IPv4 loopback; the registered callback URL uses localhost and resolves here on macOS.
 server = http.server.HTTPServer(("127.0.0.1", 8765), Handler)
 server.handle_request()
 PY
@@ -192,22 +211,56 @@ if [[ ! -s "$TMP_DIR/authorization_code" ]]; then
 fi
 wait "$CALLBACK_PID" || true
 CALLBACK_PID=""
-
 echo 'Browser authorization callback: received'
 
 printf '\n[4/7] Exchange the authorization code for fresh tokens\n'
 AUTH_CODE="$(cat "$TMP_DIR/authorization_code")"
 CODE_VERIFIER="$(cat "$TMP_DIR/verifier")"
 
-curl -fsS -X POST "https://public-api.wordpress.com/oauth2-1/token" \
+python3 - "$CLIENT_ID" "$REDIRECT_URI" "$AUTH_CODE" "$CODE_VERIFIER" "$TMP_DIR/token-form.txt" <<'PY'
+import pathlib, sys, urllib.parse
+client_id, redirect_uri, code, verifier, outfile = sys.argv[1:]
+form = {
+    "grant_type": "authorization_code",
+    "code": code,
+    "redirect_uri": redirect_uri,
+    "code_verifier": verifier,
+    "client_id": client_id,
+}
+path = pathlib.Path(outfile)
+path.write_text(urllib.parse.urlencode(form), encoding="ascii")
+path.chmod(0o600)
+PY
+
+HTTP_STATUS="$(curl -sS -o "$TMP_DIR/tokens.json" -w '%{http_code}' \
+  -X POST "https://public-api.wordpress.com/oauth2-1/token" \
   -H 'Content-Type: application/x-www-form-urlencoded' \
-  --data-urlencode 'grant_type=authorization_code' \
-  --data-urlencode "code=${AUTH_CODE}" \
-  --data-urlencode "redirect_uri=${REDIRECT_URI}" \
-  --data-urlencode "code_verifier=${CODE_VERIFIER}" \
-  --data-urlencode "client_id=${CLIENT_ID}" \
-  > "$TMP_DIR/tokens.json"
+  --data-binary @"$TMP_DIR/token-form.txt")"
 chmod 600 "$TMP_DIR/tokens.json"
+
+if [[ "$HTTP_STATUS" != "200" ]]; then
+  python3 - "$TMP_DIR/tokens.json" "$SAFE_ERROR_FILE" "$HTTP_STATUS" <<'PY'
+import json, pathlib, sys
+src = pathlib.Path(sys.argv[1])
+out = pathlib.Path(sys.argv[2])
+status = int(sys.argv[3])
+try:
+    obj = json.loads(src.read_text())
+except Exception:
+    obj = {}
+safe = {
+    "http_status": status,
+    "error": obj.get("error"),
+    "error_description": obj.get("error_description"),
+    "message": obj.get("message"),
+}
+safe = {k: v for k, v in safe.items() if v is not None}
+out.write_text(json.dumps(safe, indent=2), encoding="utf-8")
+print(json.dumps(safe, indent=2))
+PY
+  echo "Safe OAuth error saved at: $SAFE_ERROR_FILE" >&2
+  exit 1
+fi
 
 python3 - "$TMP_DIR/tokens.json" "$TMP_DIR/seed.json" <<'PY'
 import json, pathlib, sys
