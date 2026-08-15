@@ -26,7 +26,7 @@ Canonical flow:
 
 Each destination must be adapted for the platform's own discovery and presentation mechanics, including where relevant title/hook, length, post/thread structure, tags or hashtags, search phrasing, link use, CTA, image/video selection, aspect ratio/duration/cover, accessibility metadata, AI-content disclosure, community/subreddit context, and provider policy constraints.
 
-The same source may therefore produce materially different outputs for WordPress, Instagram, X, TikTok, Reddit, Tumblr, and other destinations.
+The same source may therefore produce materially different outputs for WordPress, Instagram, X, TikTok, Reddit, Tumblr, Hatena Blog, and other destinations.
 
 Current Assisted Manual packages are:
 
@@ -42,7 +42,7 @@ Detailed canonical rules: `docs/global-distribution-platform-native-policy.md`.
 
 Target: **Core 15 + Backup 35 = 50 platform/channel endpoints**.
 
-The reconstructed 2026 candidate roster is maintained in:
+The reconstructed and re-ranked 2026 candidate roster is maintained in:
 
 - `docs/global-distribution-candidates-2026.md`
 - Google Sheets `LifeToLife_Global_Distribution_Account_Ledger` -> `Candidates 50`
@@ -82,7 +82,7 @@ Tumblr is the eighth fully verified Auto Publish target.
 
 ### X
 
-Decision: **do not integrate the X posting API**.
+Decision: **keep X in Core but do not integrate the X posting API**.
 
 During each relevant distribution run, the Agent creates an `x_ready_draft` native to X rather than copied from another channel. It adapts opening hook, post length, single post vs short thread, link inclusion only when useful, and media caption/accompanying text.
 
@@ -106,20 +106,46 @@ During each relevant distribution run, the Agent prepares a `reddit_ready_post` 
 
 The user performs the final Reddit post for now.
 
-## Core portfolio changes on 2026-08-15
+## Core portfolio re-ranking — 2026-08-15
 
-- **LinkedIn removed from Core** and moved to Backup/deprioritized.
-- **Reddit remains Core**, classified as `Assisted Manual · owned-subreddit SEO`.
-- **Dailymotion is deprioritized** because ease of automation alone does not justify Core priority when discovery value is weak.
-- **Tumblr completed full Auto Publish verification** and is now an operating channel rather than a candidate.
-- Vimeo remains a lower-priority video candidate and is not the default next integration.
-- Mastodon activation remains paused pending stronger policy/discovery justification.
-- Telegram remains low priority because discovery is weak without an existing subscriber base.
+The Core 15 is now:
+
+1. YouTube
+2. Instagram Professional
+3. Facebook Pages
+4. TikTok — Assisted Manual
+5. Threads
+6. Pinterest — Trial approval pending
+7. X — Assisted Manual
+8. WordPress.com
+9. Reddit — Assisted Manual / owned-subreddit SEO
+10. Blogger
+11. Bluesky
+12. Tumblr
+13. Hatena Blog — **NEXT Auto Publish candidate**
+14. Dailymotion — Auto Publish candidate #2
+15. OK.ru — regional Auto Publish candidate #3
+
+Changes from the previous roster:
+
+- **X moves into Core.** Core reflects strategic distribution value, not whether the final click is automated.
+- **Hatena Blog moves into Core and becomes the next activation target.** Official AtomPub still supports authenticated create/read/update/delete of entries, and it adds a Japan-specific public blog/search surface without an app-review gate.
+- **Dailymotion remains Core**, but is behind Hatena because setup is heavier. API v2 supports programmatic upload plus video creation/publication.
+- **OK.ru moves into Core** as a Russia/CIS regional social-feed endpoint. Its official OAuth platform is explicitly intended for automated posting to a group/user feed and `mediatopic.post` remains available.
+- **Vimeo moves to Backup.** Its API is valid, but API upload access is gated and incremental discovery value is lower than Dailymotion.
+- **Mastodon moves to Backup.** The adapter remains prepared, but easy automation alone does not justify Core priority.
+- **Telegram moves to Backup.** The Bot API is capable, but channels are primarily subscriber-driven and weak for zero-base discovery.
+- **LINE Official Account remains Backup** for the same follower-first reason.
+- **Apple News is parked in Backup.** The API is active, but Apple's current News Publisher policy says publications should be professional journalistic publications based in Apple News territories (Australia, Canada, UK, US). Korea-based LifeToLife is therefore not a current activation target.
+- **LinkedIn remains Backup/deprioritized.**
+
+Detailed ordering and caveats are canonical in `docs/global-distribution-candidates-2026.md`.
 
 ## Distribution Agent infrastructure
 
 - Worker: `lifetolife-distribution-agent`
 - Production endpoint: `https://distribution-api.lifetolife.net`
+- Latest deployed Version ID: `42bd43fb-f786-4d25-82eb-8895490f0cd9`
 - Base v8 source: `workers/distribution-agent/worker-v8.js`
 - Tumblr publish layer: `workers/distribution-agent/worker-v8-tumblr-publish.js`
 - Current uint64-safe entry layer: `workers/distribution-agent/worker-v8-tumblr-safe-verify.js`
@@ -173,8 +199,10 @@ Do not choose a platform merely because its API is easy.
 
 Current queue:
 
-1. Operate and harden the eight verified Auto Publish channels.
-2. Pinterest moves immediately into implementation when Trial approval arrives.
-3. Re-rank the remaining candidates before opening another account; Vimeo, Dailymotion, Telegram, Mastodon, and LinkedIn should not be promoted merely because their APIs are easy.
+1. **Hatena Blog — NEXT.** Create the LifeToLife Hatena account/blog, obtain API credentials, add the AtomPub adapter, create a test entry, and re-query the created member URI.
+2. **Dailymotion — second.** Open/confirm channel + developer application, obtain OAuth access with `video.manage`, upload a test asset, publish, and re-query.
+3. **OK.ru — third.** Obtain developer rights, create an OAuth-enabled app, test `mediatopic.post` on the owned surface, and re-query.
+4. **Pinterest jumps ahead immediately when Trial approval arrives.**
+5. Operate and harden the eight verified Auto Publish channels continuously.
 
-X, TikTok, and Reddit are Agent-generated, human-posted channels. All future channel implementations must comply with `docs/global-distribution-platform-native-policy.md`.
+X, TikTok, and Reddit are Agent-generated, human-posted Core channels. All future channel implementations must comply with `docs/global-distribution-platform-native-policy.md`.
