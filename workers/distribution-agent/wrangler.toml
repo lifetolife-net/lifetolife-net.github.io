@@ -1,11 +1,14 @@
 name = "lifetolife-distribution-agent"
-main = "worker-v8-hatena.js"
+main = "worker-v8-trigger.js"
 compatibility_date = "2026-08-14"
 workers_dev = true
 
 [[routes]]
 pattern = "distribution-api.lifetolife.net"
 custom_domain = true
+
+[triggers]
+crons = [ "*/5 * * * *" ]
 
 [[durable_objects.bindings]]
 name = "WPCOM_AUTH_STATE"
