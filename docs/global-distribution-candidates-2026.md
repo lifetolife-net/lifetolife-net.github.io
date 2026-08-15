@@ -31,14 +31,14 @@ This file maintains the reconstructed 50-endpoint strategic distribution roster 
 | 10 | Blogger | Blogger API `posts.insert` -> `posts.get` | Google OAuth | **Verified + Agent integrated** |
 | 11 | Bluesky | AT Protocol `createRecord` -> `getRecord` | App Password / session | **Verified + Agent integrated** |
 | 12 | Tumblr | OAuth2 + NPF `POST /v2/blog/{blog}/posts` -> authenticated GET | OAuth app; `basic write offline_access` | **Verified + Agent integrated + refresh-aware auth** |
-| 13 | Hatena Blog | AtomPub `POST /atom/entry` -> member `GET` | Hatena account + blog API key; HTTPS Basic | **Adapter prepared · credentials/account pending · NEXT** |
+| 13 | Hatena Blog | AtomPub `POST /atom/entry` -> member `GET` | Hatena account + blog API key; HTTPS Basic | **Adapter prepared · blog-opening manual review pending · NEXT** |
 | 14 | Dailymotion | API v2 upload session -> profile video create/publish | OAuth2 + `video.manage` | **Auto Publish candidate #2** |
 | 15 | OK.ru | REST `mediatopic.post` -> topic re-query | Developer rights + OAuth platform/app keys | **Regional Auto Publish candidate #3** |
 
 ### Why the Core changed
 
 - **X moves from Backup to Core.** Core is strategic, not synonymous with API-integrated. X retains meaningful public discovery value while remaining Assisted Manual to avoid API cost/maintenance.
-- **Hatena Blog moves into Core and becomes the next activation target.** Its official AtomPub API still supports create/read/update/delete, including authenticated entry creation and member re-query. It adds a Japan-specific public blog/search surface without an app-review gate. The Distribution Agent wrapper, non-posting credential verification route, and safe setup script are now committed; account/blog creation and API-key connection remain.
+- **Hatena Blog moves into Core and becomes the next activation target.** Its official AtomPub API still supports create/read/update/delete, including authenticated entry creation and member re-query. The Distribution Agent wrapper, non-posting credential verification route, and safe setup script are committed. During blog creation Hatena flagged unusual activity and required a manual blog-opening request; that request was submitted on 2026-08-15 and is awaiting review.
 - **Dailymotion remains Core but is re-ranked behind Hatena.** Its current API v2 supports programmatic upload plus video creation/publication and can reuse LifeToLife video assets, but setup is heavier than Hatena.
 - **OK.ru moves into Core** as a regional social-feed endpoint for Russia/CIS. Official documentation supports automated group/user feed posting via the OAuth platform and `mediatopic.post`, but developer rights/app setup add friction.
 - **Vimeo, Mastodon and Telegram move to Backup.** Vimeo is primarily hosting/professional video and requires upload access; Mastodon is easy to automate but weaker in incremental discovery; Telegram is follower/subscriber-driven rather than organic discovery-first.
@@ -81,7 +81,7 @@ Tumblr became the eighth Auto Publish Verified endpoint on 2026-08-15. Verified 
 | 44 | Discourse | API create topic/post | API confirmed; requires relevant forum/community |
 | 45 | ActivityPub self-hosted actor | W3C ActivityPub federation | Requires own actor/server implementation; infrastructure rather than audience |
 | 46 | WebSub + RSS distribution | W3C WebSub around canonical RSS/Atom | Syndication endpoint rather than hosted audience |
-| 47 | IndexNow | URL submission API | Search/indexing endpoint rather than social audience |
+| 47 | IndexNow | IndexNow URL submission API | Search/indexing endpoint rather than social audience |
 | 48 | Nostr relays | NIP event publishing | Relay policy varies; fragmented discovery |
 | 49 | GitHub Discussions | GraphQL `createDiscussion` | Developer/community distribution; topic-fit constraint |
 | 50 | GIPHY | Upload API | Production-key limits apply; format-specific |
@@ -90,7 +90,7 @@ Tumblr became the eighth Auto Publish Verified endpoint on 2026-08-15. Verified 
 
 ### TikTok
 
-Do not pursue Content Posting API approval/audit for now. The Agent prepares final asset choice, caption, concise hashtags, cover/title suggestion, upload notes, CTA/link recommendation, and AI-content disclosure guidance when applicable. The human performs final publish.
+Do not pursue Content Posting API approval/audit for now. The Agent prepares final asset choice, caption, concise hashtags, cover/title suggestion, upload notes, CTA/link recommendation, and AI-generated-content disclosure guidance when applicable. The human performs final publish.
 
 ### X
 
@@ -102,7 +102,7 @@ Use the user-owned subreddit as an Assisted Manual searchable archive/discussion
 
 ## Current activation queue after 8 Verified automated channels
 
-1. **Hatena Blog — NEXT.** Distribution Agent adapter is prepared. Create the LifeToLife Hatena account/blog, obtain the blog API key, run `workers/distribution-agent/setup-hatena.sh` to store secrets/deploy/verify access/dry-run without posting, then create one test entry and re-query its returned member URI.
+1. **Hatena Blog — NEXT, manual review pending.** Wait for Hatena's response to the submitted blog-opening request. On approval, obtain the blog API key, run `workers/distribution-agent/setup-hatena.sh` to store secrets/deploy/verify access/dry-run without posting, then create one test entry and re-query its returned member URI.
 2. **Dailymotion — second.** Open/confirm channel + developer application, obtain OAuth access with `video.manage`, upload a private/unlisted test first, then publish/re-query.
 3. **OK.ru — third.** Obtain developer rights, create an OAuth-enabled app, then test `mediatopic.post` on the owned profile/group and re-query the resulting topic.
 4. **Pinterest — jumps ahead immediately when Trial approval arrives.**
