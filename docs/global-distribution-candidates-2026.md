@@ -12,7 +12,7 @@ The exact historical 50-name roster was not preserved in the repository or the G
 - A candidate may be classified as either **Auto Publish** or **Assisted Manual**.
 - `Auto Publish` means the Distribution Agent performs the final provider API publish/upload.
 - `Assisted Manual` means the Agent still transforms the source into a platform-ready package, but the human performs the final platform publish action.
-- A platform can remain strategically Core even when final posting is manual if discovery value is high and API integration cost/review friction is not worth maintaining.
+- A platform can remain strategically Core even when final posting is manual if discovery/search value is high and API integration cost/review friction is not worth maintaining.
 - Account opening, API access, live publish verification, and common Distribution Agent integration are separate milestones.
 - Regional coverage is preserved through global and regional channels relevant to South America, Southeast Asia, India, Japan, Europe/CIS, and the open/federated web.
 - Secrets never belong in this file or the Google Sheets ledger.
@@ -31,8 +31,8 @@ The exact historical 50-name roster was not preserved in the repository or the G
 | 7 | Bluesky | AT Protocol `createRecord` -> `getRecord` | App Password / session | **Verified + Agent integrated** |
 | 8 | Pinterest | Pinterest API v5 `POST /pins` | Trial/Standard API approval | **Trial approval pending** |
 | 9 | TikTok | Content Posting API exists, but not used operationally | Public Direct Post requires app review/audit | **Core · Assisted Manual** |
-| 10 | LinkedIn | Posts API `POST /rest/posts` | Product/permission access | API confirmed; unopened |
-| 11 | Reddit | Reddit Developer Platform user actions / submit post | App/platform approval and community policy | API confirmed; unopened; assisted-manual suitability under review |
+| 10 | Vimeo | Vimeo video upload API | Developer app; upload access may require approval | API confirmed; promoted to Core after LinkedIn removal |
+| 11 | Reddit | Manual publish to user-owned subreddit; API only if separately approved | Public subreddit; Reddit API approval/commercial restrictions apply | **Core · Assisted Manual · owned-subreddit SEO** |
 | 12 | Telegram Channel | Bot API `sendMessage` to channel | Bot must be channel administrator | API confirmed; low discovery value; Core status under review |
 | 13 | Mastodon | `POST /api/v1/statuses` -> status re-query | Instance account + user token | Adapter prepared; activation paused pending instance/policy fit |
 | 14 | Tumblr | Tumblr API v2 create post | OAuth app/user auth | API confirmed; unopened |
@@ -44,6 +44,8 @@ The Core table is a **strategic portfolio**, not merely an API-automation list.
 
 The current 7 Verified channels remain the automated foundation. Pinterest remains Core despite approval latency because of discovery value. TikTok remains Core because of discovery value, but LifeToLife will **not** pursue TikTok Direct Post API approval for now. Instead the Agent will prepare a TikTok-ready publishing package and the human will perform the final upload/publish in the TikTok app.
 
+Reddit remains Core for a different reason: the user already controls a subreddit. LifeToLife will treat that subreddit as a **public, searchable archive and discussion surface**, not as a destination for blind mass cross-posting into unrelated communities. The Agent should prepare a Reddit-native title/body package optimized for clarity and search intent, while the human performs the final post unless Reddit separately approves an appropriate API use case.
+
 For TikTok, the Agent package should include when relevant:
 
 - final video/image asset selection,
@@ -54,14 +56,20 @@ For TikTok, the Agent package should include when relevant:
 - link/CTA recommendation,
 - AI-generated-content disclosure guidance when applicable.
 
-The final TikTok publish action remains manual.
+For Reddit, the Agent package should include when relevant:
+
+- search-oriented but natural post title,
+- self-contained body text rather than thin link spam,
+- canonical LifeToLife link only when it genuinely adds value,
+- concise context explaining why the post belongs in the owned subreddit,
+- no repetitive mass-posting pattern.
 
 ## Backup 35
 
 | Rank | Platform / channel | Primary write path | 2026 decision / caveat |
 |---:|---|---|---|
 | 16 | X | X API v2 exists but is intentionally not integrated | **Assisted Manual**: existing account; Agent prepares X-ready draft, human posts |
-| 17 | Vimeo | Vimeo video upload API | API confirmed; upload access may require developer approval |
+| 17 | LinkedIn | LinkedIn Posts API `POST /rest/posts` | **Removed from Core**; professional-network fit and review burden do not justify priority |
 | 18 | Apple News | Apple News API article create/publish | API confirmed; Publisher/channel approval required |
 | 19 | DEV Community / Forem | Forem API create article | API confirmed |
 | 20 | Hatena Blog | AtomPub create/edit entries | API confirmed; Japan coverage |
@@ -110,6 +118,14 @@ Operational decision: **do not integrate the X posting API**.
 
 During every relevant distribution run, the Agent should produce an `x_ready_draft` optimized for X rather than copying another channel's text. The draft should adapt hook, length, thread-vs-single-post choice, link use, and media caption. The human performs the final publish using the existing X account.
 
+### Reddit
+
+Operational decision: **use the user's own subreddit as an Assisted Manual search/discovery channel**.
+
+The Agent prepares `reddit_ready_post` with a natural title, substantial body, optional canonical link, and subreddit-appropriate context. The human publishes it to the owned subreddit. This avoids unnecessary Reddit API approval/commercial-use risk while preserving the value of a public forum page that Google can crawl and potentially surface in forum/discussion search features.
+
+Do not turn this into repetitive thin-link posting. Reddit's spam rules prohibit mass-posting repetitive content for exposure or financial gain, including abuse facilitated by bots or generative AI tools.
+
 ## Explicit exclusions from the canonical 50
 
 ### Medium
@@ -133,9 +149,11 @@ Platforms without a credible official publishing interface remain outside the ca
 
 - **TikTok:** Assisted Manual; no API approval work for now.
 - **X:** Assisted Manual; no API integration work.
+- **Reddit:** Assisted Manual to the owned subreddit; treat it as a searchable content archive, not mass distribution.
+- **LinkedIn:** removed from Core and deprioritized.
 - **Pinterest:** keep approval wait state; verify immediately when Trial access arrives.
 - **Dailymotion / Tumblr:** strongest remaining candidates for the next fully automated channel opening.
-- **LinkedIn / Reddit:** keep under review because discovery value is meaningful but permission/community friction is higher.
+- **Vimeo:** promoted to Core as a second professional video-distribution candidate.
 - **Telegram / Mastodon:** retain as candidates, but do not prioritize merely because their APIs are easy; discovery value and operating-policy fit matter.
 
 The next fully automated channel should be selected by **discovery value × automation value × friction**, not by API simplicity alone.
