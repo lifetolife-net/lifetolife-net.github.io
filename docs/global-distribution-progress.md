@@ -122,14 +122,14 @@ The Core 15 is now:
 10. Blogger
 11. Bluesky
 12. Tumblr
-13. Hatena Blog — **adapter prepared · credentials pending · NEXT**
+13. Hatena Blog — **adapter prepared · blog-opening manual review pending · NEXT**
 14. Dailymotion — Auto Publish candidate #2
 15. OK.ru — regional Auto Publish candidate #3
 
 Changes from the previous roster:
 
 - **X moves into Core.** Core reflects strategic distribution value, not whether the final click is automated.
-- **Hatena Blog moves into Core and becomes the next activation target.** Official AtomPub still supports authenticated create/read/update/delete of entries, and it adds a Japan-specific public blog/search surface without an app-review gate.
+- **Hatena Blog moves into Core and becomes the next activation target.** Official AtomPub still supports authenticated create/read/update/delete of entries, and it adds a Japan-specific public blog/search surface. The Distribution Agent adapter is prepared; Hatena flagged unusual activity during blog creation, so a manual blog-opening request was submitted on 2026-08-15 and is awaiting review.
 - **Dailymotion remains Core**, but is behind Hatena because setup is heavier. API v2 supports programmatic upload plus video creation/publication.
 - **OK.ru moves into Core** as a Russia/CIS regional social-feed endpoint. Its official OAuth platform is explicitly intended for automated posting to a group/user feed and `mediatopic.post` remains available.
 - **Vimeo moves to Backup.** Its API is valid, but API upload access is gated and incremental discovery value is lower than Dailymotion.
@@ -152,7 +152,8 @@ Hatena is now prepared in source without changing the running production deploym
 - Added authenticated non-posting `POST /v1/verify/hatena` route to verify AtomPub service-document access before any live post.
 - Added `workers/distribution-agent/setup-hatena.sh`; it stores Hatena ID/blog ID/API key as Cloudflare Worker secrets, deploys the canonical wrapper, verifies service access, and runs a Distribution Agent dry run. The script creates **no Hatena post**.
 - Canonical `wrangler.toml` now points to `worker-v8-hatena.js`.
-- Hatena credentials are not yet connected and the new wrapper has **not** been deployed to production; therefore the latest deployed Version ID remains unchanged.
+- During blog creation Hatena reported unusual activity and required a manual blog-opening request. The request was submitted on 2026-08-15; Hatena says a response is expected after several days.
+- Hatena blog/API credentials are therefore not yet available and the new wrapper has **not** been deployed to production; the latest deployed Version ID remains unchanged.
 
 ## Distribution Agent infrastructure
 
@@ -170,7 +171,7 @@ Hatena is now prepared in source without changing the running production deploym
 - Hatena credential verification route when deployed: `POST /v1/verify/hatena`
 - WordPress/Tumblr auth-state backend: SQLite-backed Durable Object `WordPressAuthState`, binding `WPCOM_AUTH_STATE`
 - Integrated and verified targets: `facebook`, `instagram`, `threads`, `blogger`, `bluesky`, `wordpress`, `youtube`, `tumblr`
-- Prepared/unverified target: `hatena` — NEXT, credentials pending
+- Prepared/unverified target: `hatena` — NEXT, blog-opening manual review pending
 - Prepared but paused/unverified adapter: `mastodon`
 
 ### Verified adapter paths
@@ -204,7 +205,7 @@ As of 2026-08-15 KST:
 - Auto Publish Verified: **8** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads, Tumblr.
 - API approval pending: **1** — Pinterest.
 - Assisted Manual explicitly adopted: **3** — X, TikTok, Reddit.
-- Prepared/unverified next adapter: **Hatena Blog** — source ready, credentials/account pending, not deployed.
+- Prepared/unverified next adapter: **Hatena Blog** — source ready, blog-opening manual review pending, not deployed.
 - Prepared but paused/unverified adapter: **Mastodon**.
 
 ## Current decision rule for the next channel
@@ -217,7 +218,7 @@ Do not choose a platform merely because its API is easy.
 
 Current queue:
 
-1. **Hatena Blog — NEXT.** Source adapter is complete. Create the LifeToLife Hatena account/blog, obtain the blog API key, run `workers/distribution-agent/setup-hatena.sh`, confirm non-posting AtomPub verification + dry run, then create one real test entry and re-query the returned member URI.
+1. **Hatena Blog — NEXT, review pending.** Wait for the submitted blog-opening request to be approved. Then obtain the blog API key, run `workers/distribution-agent/setup-hatena.sh`, confirm non-posting AtomPub verification + dry run, then create one real test entry and re-query the returned member URI.
 2. **Dailymotion — second.** Open/confirm channel + developer application, obtain OAuth access with `video.manage`, upload a test asset, publish, and re-query.
 3. **OK.ru — third.** Obtain developer rights, create an OAuth-enabled app, test `mediatopic.post` on the owned surface, and re-query.
 4. **Pinterest jumps ahead immediately when Trial approval arrives.**
