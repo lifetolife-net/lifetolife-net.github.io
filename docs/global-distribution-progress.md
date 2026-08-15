@@ -16,27 +16,40 @@ This document is the canonical progress record for LifeToLife's global distribut
 
 | Channel | Public account / handle | Standalone automation | Distribution Agent | Next action |
 |---|---|---|---|---|
-| WordPress.com | `lifetolifeglobal.wordpress.com` | **Verified** | Not yet integrated | Integrate next; preserve existing OAuth 2.1 / PKCE / MCP path |
+| WordPress.com | `lifetolifeglobal.wordpress.com` | **Verified** | **Verified + integrated** | Add persistent refresh-token rotation state for long-lived unattended operation |
 | Pinterest | LifeToLife | **Pending Trial approval** | Not applicable yet | Wait for approval, then verify actual pin creation |
 | Bluesky | `@lifetolife-net.bsky.social` | **Verified** | **Verified + integrated** | Operate through Agent; optionally move handle to `@lifetolife.net` |
 | Blogger | LifeToLife / `lifetolife-net` | **Verified** | **Verified + integrated** | Operate through Agent; stabilize Google OAuth lifecycle |
 | Facebook | Page `Life to Life` | **Verified** | **Verified + integrated** | Operate through Agent |
 | Instagram | `@lifetolife_net` | **Verified** | **Verified + integrated** | Operate through Agent |
 | Threads | `@lifetolife_net` | **Verified** | **Verified + integrated** | Operate through Agent |
-| YouTube | `@lifetolife_net` | **Verified** | Not yet integrated | Integrate after WordPress; stabilize Google OAuth lifecycle |
+| YouTube | `@lifetolife_net` | **Verified** | Adapter implemented; live Agent verification pending | Run v4 private upload + processing verification |
 
 ## Verified channels
 
 ### 1. WordPress.com
+
+Standalone verification:
 
 - Site: `lifetolifeglobal.wordpress.com`
 - Verified through two independent paths:
   1. ChatGPT WordPress.com connector
   2. Terminal/MCP client using OAuth 2.1 Dynamic Client Registration + PKCE + WordPress.com MCP
 - Both paths successfully created draft posts.
-- Detailed notes: `docs/wordpress-automation-progress.md`
+- Detailed standalone notes: `docs/wordpress-automation-progress.md`
 
-Status: **Standalone Verified; Distribution Agent integration pending.**
+Distribution Agent integration on 2026-08-15 KST:
+
+- Working path preserved exactly: OAuth 2.1 refresh -> MCP `initialize` -> `notifications/initialized` -> `wpcom-mcp-content-authoring/posts.create` -> `posts.get`.
+- Agent intentionally creates a **draft** for the first integration path rather than widening behavior to live publish.
+- Agent draft ID: `9`
+- Title: `LifeToLife Distribution Agent WordPress draft test 2026-08-15T01:50:45Z`
+- Link: `https://lifetolifeglobal.wordpress.com/?p=9`
+- Preview: `https://lifetolifeglobal.wordpress.com/?p=9&preview=true`
+- Persistent MCP re-query returned the same ID, draft status, link, title, and modified timestamp.
+- OAuth result returned `expires_in=3600` and `refresh_token_rotated=true`.
+
+Conclusion: **WordPress.com draft creation through the common LifeToLife Distribution Agent is Verified.** OAuth 2.1 refresh-token rotation is a production-hardening item: the next architecture step is persistent runtime token state rather than a static Worker secret alone.
 
 ### 2. Bluesky
 
@@ -79,7 +92,6 @@ Standalone verification on 2026-08-14:
 Distribution Agent integration on 2026-08-15 KST:
 
 - Existing local OAuth files were reused from `~/.lifetolife-distribution/blogger/`.
-- Worker stores the Blogger client metadata and refresh token as Cloudflare secrets; values are not written to GitHub or the ledger.
 - Agent refreshes a Google access token, calls `posts.insert`, then verifies with `posts.get`.
 - Agent test post ID: `7783253598875718440`
 - Title: `LifeToLife Distribution Agent integrated test 2026-08-15T01:09:57Z`
@@ -89,6 +101,8 @@ Distribution Agent integration on 2026-08-15 KST:
 Conclusion: **Blogger publishing through the common LifeToLife Distribution Agent is Verified.** Stable unattended production still requires attention to the Google OAuth consent/testing lifecycle.
 
 ### 4. YouTube
+
+Standalone verification on 2026-08-14:
 
 - Channel: `LifeToLife`
 - Handle: `@lifetolife_net`
@@ -100,7 +114,16 @@ Conclusion: **Blogger publishing through the common LifeToLife Distribution Agen
 - API polling reached processed/succeeded.
 - The video remained retrievable by API and visible in YouTube Studio.
 
-Status: **Standalone Verified; Distribution Agent integration pending.** Google OAuth lifecycle must be stabilized for unattended production.
+Distribution Agent v4 staging on 2026-08-15 KST:
+
+- New Worker source: `workers/distribution-agent/worker-v4.js`
+- New route: `POST /v1/publish/youtube`
+- Request type: authenticated multipart form with a `video` file plus title/description/privacy status.
+- Upload path: Google OAuth refresh -> resumable `videos.insert` session -> binary `PUT` -> `videos.list(part=snippet,status,processingDetails)` polling.
+- First integration test is forced to `private` and uses a tiny embedded one-second MP4 generated locally by `setup-youtube.sh`.
+- Setup script validates the OAuth refresh token and `channels.list(mine=true)` identity against channel ID `UCzB_Os4W_7MiVDpGbXfsqxA` before installing Worker secrets or uploading.
+
+Status: **Standalone Verified; Agent adapter implemented; live Agent verification pending.**
 
 ### 5. Facebook
 
@@ -173,20 +196,23 @@ Conclusion: **Threads text publishing through the common Distribution Agent is V
 
 - Worker: `lifetolife-distribution-agent`
 - Production endpoint: `https://distribution-api.lifetolife.net`
-- Common route: `POST /v1/publish`
+- Common JSON route: `POST /v1/publish`
 - Backward-compatible Meta route: `POST /v1/publish/meta`
-- Current verified common targets: `facebook`, `instagram`, `threads`, `blogger`, `bluesky`
-- Mode: `verified-path-v2`
+- YouTube multipart route prepared in v4: `POST /v1/publish/youtube`
+- Integrated and verified targets: `facebook`, `instagram`, `threads`, `blogger`, `bluesky`, `wordpress`
+- v4 source adds `youtube`; deployment/verification is pending the YouTube setup run.
 
-Current verified adapter paths:
+Verified adapter paths:
 
 - Facebook: Page `/feed` -> re-query
 - Instagram: `/media` -> container readiness -> `/media_publish` -> re-query
 - Threads: `/threads` -> `/threads_publish` -> re-query
 - Blogger: OAuth refresh token -> fresh access token -> `posts.insert` -> `posts.get`
 - Bluesky: App Password with stable DID -> `createSession` -> `createRecord` -> `getRecord`
+- WordPress.com: OAuth 2.1 refresh -> MCP initialize -> draft `posts.create` -> `posts.get`
+- YouTube v4 prepared: Google OAuth refresh -> resumable `videos.insert` -> binary upload -> `videos.list` processing re-query
 
-All provider credentials and the Distribution Agent authorization key are stored outside GitHub and the account ledger. Cloudflare Worker secrets are used for production credentials.
+All provider credentials and the Distribution Agent authorization key are stored outside GitHub and the account ledger. Cloudflare Worker secrets are used for production credentials. WordPress OAuth 2.1 token rotation requires persistent runtime state before long-lived unattended production is considered hardened.
 
 ### Threads callback Worker
 
@@ -200,7 +226,7 @@ All provider credentials and the Distribution Agent authorization key are stored
 - Project identifier: `lifetolife-distribution`
 - APIs prepared: Blogger API, YouTube Data API v3
 - Blogger and YouTube standalone API verification are complete.
-- Google OAuth lifecycle remains a production-hardening item for long-lived unattended operation.
+- Google OAuth External/Testing lifecycle remains a production-hardening item for long-lived unattended Blogger/YouTube operation.
 
 ### Account ledger
 
@@ -231,17 +257,17 @@ As of 2026-08-15 KST:
 
 - Distribution-facing accounts/channels or management hubs recorded: **9**
 - Standalone automated publishing verified: **7 channels** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads
-- Integrated and verified in the common LifeToLife Distribution Agent: **5 channels** — Facebook, Instagram, Threads, Blogger, Bluesky
-- Verified but not yet Agent-integrated: **2 channels** — WordPress.com, YouTube
+- Integrated and verified in the common LifeToLife Distribution Agent: **6 channels** — Facebook, Instagram, Threads, Blogger, Bluesky, WordPress.com
+- Verified but not yet Agent-integrated: **1 channel** — YouTube
 - API approval pending: **1** — Pinterest
 - Open publishable channels with standalone automation still unverified: **0**
 
 ## Immediate queue
 
-1. Integrate WordPress.com into the common Distribution Agent while preserving its already-verified OAuth 2.1 / PKCE / MCP publishing path.
-2. Integrate YouTube as the final currently Verified media-upload adapter.
-3. After 7-channel Agent integration, add production hardening: content transformation per channel, idempotency, retries, logging, secret rotation, and scheduling.
+1. Run the YouTube v4 private upload and processing verification.
+2. If successful, mark all **7 currently Verified channels** as Distribution Agent integrated.
+3. Add production hardening: WordPress refresh-token rotation state, channel-specific content transformation, idempotency, retries, logging, secret rotation, scheduling, and large-video upload strategy.
 4. Stabilize Google OAuth clients for long-lived unattended Blogger/YouTube operation.
 5. Keep Pinterest in approval-wait state; do not repeatedly check it manually.
-6. Cleanup of verification posts is optional and non-blocking.
+6. Cleanup of verification posts/videos is optional and non-blocking.
 7. Keep this document and the Google Sheets account ledger synchronized after every account/API milestone.
