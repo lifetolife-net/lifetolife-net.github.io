@@ -3,9 +3,11 @@ const THREADS_GRAPH = "https://graph.threads.net";
 const BLUESKY_PDS = "https://bsky.social";
 const GOOGLE_TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token";
 const BLOGGER_API = "https://www.googleapis.com/blogger/v3";
+const WPCOM_TOKEN_ENDPOINT = "https://public-api.wordpress.com/oauth2-1/token";
+const WPCOM_MCP_ENDPOINT = "https://public-api.wordpress.com/wpcom/v2/mcp/v1";
 
 const META_TARGETS = ["facebook", "instagram", "threads"];
-const TEXT_TARGETS = ["bluesky", "blogger"];
+const TEXT_TARGETS = ["bluesky", "blogger", "wordpress"];
 const ALL_TARGETS = [...META_TARGETS, ...TEXT_TARGETS];
 
 function json(data, status = 200) {
@@ -361,6 +363,213 @@ async function publishBlogger(env, content) {
   };
 }
 
+async function getWordPressAccessToken(env) {
+  const refreshToken = requiredEnv(env, "WPCOM_REFRESH_TOKEN");
+  const params = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: refreshToken,
+    client_id: requiredEnv(env, "WPCOM_CLIENT_ID"),
+  });
+
+  const token = await fetchJson(
+    WPCOM_TOKEN_ENDPOINT,
+    {
+      method: "POST",
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      body: params.toString(),
+    },
+    "wordpress-oauth"
+  );
+
+  if (!token.access_token) throw new Error("WordPress.com token refresh returned no access_token");
+  return {
+    access_token: token.access_token,
+    refresh_token_rotated: Boolean(token.refresh_token && token.refresh_token !== refreshToken),
+    expires_in: token.expires_in || null,
+  };
+}
+
+function parseMcpBody(text, contentType) {
+  if (!text) return null;
+  if (String(contentType || "").includes("text/event-stream")) {
+    const events = [];
+    for (const line of text.split(/\r?\n/)) {
+      if (!line.startsWith("data:")) continue;
+      const raw = line.slice(5).trim();
+      if (!raw || raw === "[DONE]") continue;
+      try {
+        events.push(JSON.parse(raw));
+      } catch {
+        // Ignore non-JSON SSE data lines.
+      }
+    }
+    return events.length ? events[events.length - 1] : { raw: text };
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
+
+async function wpcomMcpRequest(accessToken, message, sessionId = null) {
+  const headers = {
+    Authorization: `Bearer ${accessToken}`,
+    "content-type": "application/json",
+    accept: "application/json, text/event-stream",
+  };
+  if (sessionId) headers["mcp-session-id"] = sessionId;
+
+  const response = await fetch(WPCOM_MCP_ENDPOINT, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(message),
+  });
+  const text = await response.text();
+  const payload = parseMcpBody(text, response.headers.get("content-type"));
+  if (!response.ok || payload?.error) {
+    throw providerError("wordpress-mcp", response, payload || { raw: text });
+  }
+  return {
+    payload,
+    session_id: response.headers.get("mcp-session-id") || sessionId,
+  };
+}
+
+async function initializeWordPressMcp(accessToken) {
+  const initialized = await wpcomMcpRequest(accessToken, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      protocolVersion: "2025-06-18",
+      capabilities: {},
+      clientInfo: {
+        name: "LifeToLife Distribution Agent",
+        version: "1.0.0",
+      },
+    },
+  });
+
+  const sessionId = initialized.session_id;
+  if (!sessionId) throw new Error("WordPress.com MCP initialize returned no MCP session ID");
+
+  await wpcomMcpRequest(
+    accessToken,
+    {
+      jsonrpc: "2.0",
+      method: "notifications/initialized",
+    },
+    sessionId
+  );
+
+  return sessionId;
+}
+
+function extractWordPressToolData(payload) {
+  const result = payload?.result;
+  if (!result) throw new Error("WordPress.com MCP tool call returned no result");
+
+  if (result.structuredContent?.data) return result.structuredContent.data;
+  if (result.structuredContent) return result.structuredContent;
+
+  const textItem = Array.isArray(result.content)
+    ? result.content.find(item => item?.type === "text" && typeof item.text === "string")
+    : null;
+  if (textItem) {
+    try {
+      const parsed = JSON.parse(textItem.text);
+      return parsed?.data || parsed;
+    } catch {
+      return { raw: textItem.text };
+    }
+  }
+
+  return result;
+}
+
+function wordpressBlockContent(content) {
+  if (content.html) {
+    return `<!-- wp:html -->\n${content.html}\n<!-- /wp:html -->`;
+  }
+  return String(content.text)
+    .split(/\n{2,}/)
+    .map(block => `<!-- wp:paragraph -->\n<p>${escapeHtml(block).replace(/\n/g, "<br>")}</p>\n<!-- /wp:paragraph -->`)
+    .join("\n\n");
+}
+
+async function wordpressToolCall(accessToken, sessionId, id, operation, params) {
+  const response = await wpcomMcpRequest(
+    accessToken,
+    {
+      jsonrpc: "2.0",
+      id,
+      method: "tools/call",
+      params: {
+        name: "wpcom-mcp-content-authoring",
+        arguments: {
+          wpcom_site: requiredEnv({ WPCOM_SITE: params.__site }, "WPCOM_SITE"),
+          action: "execute",
+          operation,
+          params: params.value,
+        },
+      },
+    },
+    sessionId
+  );
+  return extractWordPressToolData(response.payload);
+}
+
+async function publishWordPress(env, content) {
+  const site = requiredEnv(env, "WPCOM_SITE");
+  const tokenInfo = await getWordPressAccessToken(env);
+  const accessToken = tokenInfo.access_token;
+  const sessionId = await initializeWordPressMcp(accessToken);
+  const title = content.title || content.text.split(/\n/)[0].slice(0, 120) || "LifeToLife";
+
+  const created = await wordpressToolCall(accessToken, sessionId, 2, "posts.create", {
+    __site: site,
+    value: {
+      title: { raw: title },
+      content: { raw: wordpressBlockContent(content) },
+      status: "draft",
+      include_fields: ["id", "status", "link", "title", "modified"],
+      user_confirmed: true,
+    },
+  });
+
+  const postId = Number(created.id);
+  if (!Number.isFinite(postId)) throw new Error("WordPress.com posts.create returned no numeric post ID");
+
+  const verified = await wordpressToolCall(accessToken, sessionId, 3, "posts.get", {
+    __site: site,
+    value: {
+      id: postId,
+      include_fields: ["id", "status", "link", "title", "modified"],
+    },
+  });
+
+  return {
+    ok: true,
+    target: "wordpress",
+    mode: "verified-mcp-draft",
+    id: postId,
+    permalink: verified.link || created.link || null,
+    preview_url: `https://${site}/?p=${postId}&preview=true`,
+    auth: {
+      refresh_token_rotated: tokenInfo.refresh_token_rotated,
+      expires_in: tokenInfo.expires_in,
+    },
+    verification: {
+      id: verified.id || postId,
+      status: verified.status || null,
+      link: verified.link || null,
+      title: verified.title || null,
+      modified: verified.modified || null,
+    },
+  };
+}
+
 function normalizeTargets(targets, { defaultTargets = null } = {}) {
   if (targets === undefined && defaultTargets) return [...defaultTargets];
   if (!Array.isArray(targets) || targets.length === 0) {
@@ -420,7 +629,7 @@ function publicError(error) {
           error:
             typeof payload.error === "string"
               ? payload.error
-              : payload.error?.type || payload.error?.code || undefined,
+              : payload.error?.type || payload.error?.code || payload.error?.message || undefined,
           code: payload.error?.code || undefined,
           error_subcode: payload.error?.error_subcode || undefined,
           message:
@@ -437,6 +646,7 @@ function publisherMap(env, content) {
     threads: () => publishThreads(env, content),
     bluesky: () => publishBluesky(env, content),
     blogger: () => publishBlogger(env, content),
+    wordpress: () => publishWordPress(env, content),
   };
 }
 
@@ -463,8 +673,9 @@ function dryRunPlan(content) {
     if (target === "facebook") plan.facebook = "verified text /feed + re-query";
     if (target === "instagram") plan.instagram = "verified image /media -> /media_publish + re-query";
     if (target === "threads") plan.threads = "verified text /threads -> /threads_publish + re-query";
-    if (target === "bluesky") plan.bluesky = "App Password -> createSession -> createRecord -> getRecord";
+    if (target === "bluesky") plan.bluesky = "App Password + stable DID -> createSession -> createRecord -> getRecord";
     if (target === "blogger") plan.blogger = "refresh token -> access token -> posts.insert -> posts.get";
+    if (target === "wordpress") plan.wordpress = "OAuth 2.1 refresh -> MCP initialize -> posts.create draft -> posts.get";
   }
   return plan;
 }
@@ -480,7 +691,7 @@ export default {
         service: "lifetolife-distribution-agent",
         targets: ALL_TARGETS,
         meta_targets: META_TARGETS,
-        mode: "verified-path-v2",
+        mode: "verified-path-v3",
       });
     }
 
