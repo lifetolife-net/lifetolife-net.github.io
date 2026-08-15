@@ -1,8 +1,16 @@
 name = "lifetolife-distribution-agent"
-main = "worker-v5.js"
+main = "worker-v8.js"
 compatibility_date = "2026-08-14"
 workers_dev = true
 
 [[routes]]
 pattern = "distribution-api.lifetolife.net"
 custom_domain = true
+
+[[durable_objects.bindings]]
+name = "WPCOM_AUTH_STATE"
+class_name = "WordPressAuthState"
+
+[[migrations]]
+tag = "wordpress-auth-v1"
+new_sqlite_classes = ["WordPressAuthState"]
