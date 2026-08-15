@@ -4,6 +4,7 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 WORKER_ORIGIN="https://distribution-api.lifetolife.net"
+WORKERS_DEV_ORIGIN="https://lifetolife-distribution-agent.jisooyoun-cafe.workers.dev"
 AGENT_KEY_FILE="${HOME}/.config/lifetolife/distribution-agent-key"
 NAMESPACE_SUFFIX="TOKEN_STATE"
 TMP_DIR="$(mktemp -d)"
@@ -14,7 +15,7 @@ if [[ ! -f "$AGENT_KEY_FILE" ]]; then
   exit 1
 fi
 
-printf '\n[1/5] Find or create Cloudflare KV namespace for TOKEN_STATE\n'
+printf '\n[1/6] Find or create Cloudflare KV namespace for TOKEN_STATE\n'
 if ! npx wrangler whoami >/dev/null 2>&1; then
   npx wrangler login
 fi
@@ -72,10 +73,11 @@ fi
 echo "TOKEN_STATE namespace ID: $KV_ID"
 echo 'KV namespace IDs are non-secret Cloudflare resource identifiers.'
 
-printf '\n[2/5] Bind TOKEN_STATE and switch Worker to v6\n'
-cat > wrangler.toml <<EOF
+printf '\n[2/6] Build an explicit v6 Wrangler config and validate it\n'
+CONFIG_FILE="$TMP_DIR/wrangler-v6.toml"
+cat > "$CONFIG_FILE" <<EOF
 name = "lifetolife-distribution-agent"
-main = "worker-v6.js"
+main = "$PWD/worker-v6.js"
 compatibility_date = "2026-08-14"
 workers_dev = true
 
@@ -88,23 +90,62 @@ binding = "TOKEN_STATE"
 id = "$KV_ID"
 EOF
 
-npx wrangler deploy
-
-printf '\n[3/5] Health check\n'
-curl -fsS "${WORKER_ORIGIN}/health" | tee "$TMP_DIR/health.json"
-printf '\n'
-
-python3 - "$TMP_DIR/health.json" <<'PY'
-import json, pathlib, sys
-obj = json.loads(pathlib.Path(sys.argv[1]).read_text())
-if obj.get("mode") != "verified-path-v6":
-    raise SystemExit("Expected verified-path-v6 health response")
-if obj.get("wordpress_token_state_bound") is not True:
-    raise SystemExit("TOKEN_STATE binding is still false")
-print("TOKEN_STATE binding: confirmed")
+python3 - "$CONFIG_FILE" <<'PY'
+import pathlib, sys
+text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
+required = [
+    'name = "lifetolife-distribution-agent"',
+    'worker-v6.js',
+    'binding = "TOKEN_STATE"',
+    'distribution-api.lifetolife.net',
+]
+missing = [x for x in required if x not in text]
+if missing:
+    raise SystemExit(f"Generated v6 Wrangler config is missing: {missing}")
+print("Explicit v6 Wrangler config: validated")
 PY
 
-printf '\n[4/5] Verify WordPress refresh-token rotation persistence without creating content\n'
+printf '\n[3/6] Deploy v6 with the explicit config path\n'
+npx wrangler deploy --config "$CONFIG_FILE" --cwd "$PWD"
+
+printf '\n[4/6] Verify v6 health on workers.dev and custom domain\n'
+check_health() {
+  local origin="$1"
+  local label="$2"
+  local outfile="$3"
+  local ok=0
+  local attempt
+
+  for attempt in 1 2 3 4 5 6 7 8 9 10; do
+    if curl -fsS "${origin}/health" > "$outfile" 2>/dev/null; then
+      if python3 - "$outfile" <<'PY'
+import json, pathlib, sys
+obj = json.loads(pathlib.Path(sys.argv[1]).read_text())
+raise SystemExit(0 if obj.get("mode") == "verified-path-v6" and obj.get("wordpress_token_state_bound") is True else 1)
+PY
+      then
+        ok=1
+        break
+      fi
+    fi
+    sleep 2
+  done
+
+  echo "${label} health:"
+  cat "$outfile" 2>/dev/null || true
+  printf '\n'
+
+  if [[ "$ok" -ne 1 ]]; then
+    echo "${label} did not reach verified-path-v6 with TOKEN_STATE=true." >&2
+    return 1
+  fi
+  echo "${label}: verified-path-v6 + TOKEN_STATE=true"
+}
+
+check_health "$WORKERS_DEV_ORIGIN" "workers.dev" "$TMP_DIR/health-workers-dev.json"
+check_health "$WORKER_ORIGIN" "custom domain" "$TMP_DIR/health-custom-domain.json"
+
+printf '\n[5/6] Verify WordPress refresh-token rotation persistence without creating content\n'
 DISTRIBUTION_AGENT_KEY="$(cat "$AGENT_KEY_FILE")"
 RESPONSE_FILE="/tmp/lifetolife-wordpress-token-state-verification.json"
 
@@ -114,7 +155,7 @@ curl -sS -X POST "${WORKER_ORIGIN}/v1/verify/wordpress-token-state" \
   -d '{}' | tee "$RESPONSE_FILE"
 printf '\n'
 
-printf '\n[5/5] Summarize result\n'
+printf '\n[6/6] Summarize result\n'
 python3 - "$RESPONSE_FILE" "$KV_ID" <<'PY'
 import json, pathlib, sys
 path = pathlib.Path(sys.argv[1])
@@ -139,4 +180,4 @@ print("No WordPress post was created by this script.")
 PY
 
 printf '\nSaved WordPress token-state verification: %s\n' "$RESPONSE_FILE"
-printf 'Local wrangler.toml now contains the non-secret KV namespace binding; do not discard it before GitHub sync.\n'
+printf 'TOKEN_STATE namespace ID is non-secret and may be synced into the canonical Wrangler config after verification.\n'
