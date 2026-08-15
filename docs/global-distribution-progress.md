@@ -122,7 +122,7 @@ The Core 15 is now:
 10. Blogger
 11. Bluesky
 12. Tumblr
-13. Hatena Blog — **NEXT Auto Publish candidate**
+13. Hatena Blog — **adapter prepared · credentials pending · NEXT**
 14. Dailymotion — Auto Publish candidate #2
 15. OK.ru — regional Auto Publish candidate #3
 
@@ -141,6 +141,19 @@ Changes from the previous roster:
 
 Detailed ordering and caveats are canonical in `docs/global-distribution-candidates-2026.md`.
 
+## Hatena Blog preparation — 2026-08-15
+
+Hatena is now prepared in source without changing the running production deployment.
+
+- New canonical wrapper: `workers/distribution-agent/worker-v8-hatena.js`.
+- It imports the current `worker-v8-tumblr-safe-verify.js`, so all eight existing provider paths and Tumblr's uint64-safe verification layer remain underneath it.
+- Publish path: HTTPS Basic authentication using Hatena ID + blog API key -> AtomPub `POST /atom/entry` -> require HTTP 201 -> read returned `Location` member URI -> authenticated member `GET` re-query.
+- Supports `title`, `text`, optional `hatena_categories`, and optional `hatena_draft`.
+- Added authenticated non-posting `POST /v1/verify/hatena` route to verify AtomPub service-document access before any live post.
+- Added `workers/distribution-agent/setup-hatena.sh`; it stores Hatena ID/blog ID/API key as Cloudflare Worker secrets, deploys the canonical wrapper, verifies service access, and runs a Distribution Agent dry run. The script creates **no Hatena post**.
+- Canonical `wrangler.toml` now points to `worker-v8-hatena.js`.
+- Hatena credentials are not yet connected and the new wrapper has **not** been deployed to production; therefore the latest deployed Version ID remains unchanged.
+
 ## Distribution Agent infrastructure
 
 - Worker: `lifetolife-distribution-agent`
@@ -148,12 +161,16 @@ Detailed ordering and caveats are canonical in `docs/global-distribution-candida
 - Latest deployed Version ID: `42bd43fb-f786-4d25-82eb-8895490f0cd9`
 - Base v8 source: `workers/distribution-agent/worker-v8.js`
 - Tumblr publish layer: `workers/distribution-agent/worker-v8-tumblr-publish.js`
-- Current uint64-safe entry layer: `workers/distribution-agent/worker-v8-tumblr-safe-verify.js`
+- Tumblr uint64-safe layer: `workers/distribution-agent/worker-v8-tumblr-safe-verify.js`
+- Current canonical source entry: `workers/distribution-agent/worker-v8-hatena.js` (**prepared, not yet deployed**)
 - Canonical config: `workers/distribution-agent/wrangler.toml`
+- Hatena setup: `workers/distribution-agent/setup-hatena.sh`
 - Common JSON route: `POST /v1/publish`
 - YouTube multipart route: `POST /v1/publish/youtube`
+- Hatena credential verification route when deployed: `POST /v1/verify/hatena`
 - WordPress/Tumblr auth-state backend: SQLite-backed Durable Object `WordPressAuthState`, binding `WPCOM_AUTH_STATE`
 - Integrated and verified targets: `facebook`, `instagram`, `threads`, `blogger`, `bluesky`, `wordpress`, `youtube`, `tumblr`
+- Prepared/unverified target: `hatena` — NEXT, credentials pending
 - Prepared but paused/unverified adapter: `mastodon`
 
 ### Verified adapter paths
@@ -187,6 +204,7 @@ As of 2026-08-15 KST:
 - Auto Publish Verified: **8** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads, Tumblr.
 - API approval pending: **1** — Pinterest.
 - Assisted Manual explicitly adopted: **3** — X, TikTok, Reddit.
+- Prepared/unverified next adapter: **Hatena Blog** — source ready, credentials/account pending, not deployed.
 - Prepared but paused/unverified adapter: **Mastodon**.
 
 ## Current decision rule for the next channel
@@ -199,7 +217,7 @@ Do not choose a platform merely because its API is easy.
 
 Current queue:
 
-1. **Hatena Blog — NEXT.** Create the LifeToLife Hatena account/blog, obtain API credentials, add the AtomPub adapter, create a test entry, and re-query the created member URI.
+1. **Hatena Blog — NEXT.** Source adapter is complete. Create the LifeToLife Hatena account/blog, obtain the blog API key, run `workers/distribution-agent/setup-hatena.sh`, confirm non-posting AtomPub verification + dry run, then create one real test entry and re-query the returned member URI.
 2. **Dailymotion — second.** Open/confirm channel + developer application, obtain OAuth access with `video.manage`, upload a test asset, publish, and re-query.
 3. **OK.ru — third.** Obtain developer rights, create an OAuth-enabled app, test `mediatopic.post` on the owned surface, and re-query.
 4. **Pinterest jumps ahead immediately when Trial approval arrives.**
