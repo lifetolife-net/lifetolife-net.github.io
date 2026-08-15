@@ -13,6 +13,16 @@ This document is the canonical progress record for LifeToLife's global distribut
 - Never store passwords, API keys, app passwords, access tokens, refresh tokens, client secrets, authorization codes, PKCE verifiers, or the Distribution Agent authorization key in GitHub or the Google Sheets ledger.
 - Every distribution milestone must be mirrored in both this document and `LifeToLife_Global_Distribution_Account_Ledger`.
 
+## Network objective
+
+The original global rollout target is **core 15 + backup 35 = 50 API-capable platform/channel candidates**.
+
+- The number `50` refers to platform/channel endpoints in the candidate distribution network, **not necessarily 50 separate login accounts**. A single management identity can control multiple channels, as with the Meta portfolio.
+- The currently verified 7 channels are the first completed integration tranche, not the end of channel rollout.
+- Continue account/API opening toward the **core 15** first, then validate the **backup 35** in priority order.
+- Candidate selection should preserve the original constraints: automation-capable API/MCP path, audience/reach weighting, and regional coverage including South America, Southeast Asia, and India.
+- A platform whose current API automation path is uncertain remains a candidate only; do not create an account or use browser-workaround automation until the official automation path is verified.
+
 ## Current channel status
 
 | Channel | Public account / handle | Standalone automation | Distribution Agent | Next action |
@@ -192,20 +202,21 @@ Rules:
 
 As of 2026-08-15 KST:
 
-- Distribution-facing accounts/channels or management hubs recorded: **9**
-- Standalone automated publishing verified: **7 channels** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads
-- Integrated and verified in the common LifeToLife Distribution Agent: **7 channels** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads
-- Verified but not yet Agent-integrated: **0 channels**
-- API approval pending: **1** — Pinterest
-- Open publishable channels with standalone automation still unverified: **0**
+- Original candidate network target: **50 platform/channel candidates** — **core 15 + backup 35**.
+- Distribution-facing accounts/channels or management hubs currently recorded in the ledger: **9**.
+- Standalone automated publishing verified: **7 channels** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads.
+- Integrated and verified in the common LifeToLife Distribution Agent: **7 channels** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads.
+- Verified but not yet Agent-integrated: **0 channels** among the currently opened/verified set.
+- API approval pending: **1** — Pinterest.
+- The 7-channel integration milestone does **not** complete the 50-candidate rollout.
 
 ## Immediate queue
 
-1. Connect persistent WordPress refresh-token rotation state (`TOKEN_STATE`) and verify rotation persistence.
-2. Stabilize Google OAuth clients/lifecycle for long-lived unattended Blogger and YouTube operation.
-3. Add production publishing controls: channel-specific content transformation, idempotency, retry/backoff, structured logs, secret rotation, and scheduling.
-4. Define the marketing content source-of-truth and trigger that will feed the 7-channel Agent.
-5. Add large-video upload strategy for real YouTube content instead of relying on small verification media.
+1. Repair and complete persistent WordPress refresh-token rotation state (`TOKEN_STATE`) without creating content.
+2. Restore/confirm the canonical **core 15 + backup 35** candidate roster before opening the next account; current repository records contain the 7 completed channels and Pinterest, but not the full original 50-name roster.
+3. Continue account creation/API verification until the **core 15** is filled, using official API/MCP paths only.
+4. After the core 15, validate the backup 35 in weighted priority order, preserving global regional coverage including South America, Southeast Asia, and India.
+5. Keep production hardening in parallel where it blocks unattended operation: Google OAuth lifecycle, idempotency, retry/backoff, structured logs, secret rotation, and scheduling.
 6. Keep Pinterest in approval-wait state; do not repeatedly check it manually.
 7. Cleanup of verification posts/videos is optional and non-blocking.
 8. Keep this document and the Google Sheets account ledger synchronized after every milestone.
