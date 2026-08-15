@@ -82,7 +82,7 @@ async function handleTumblrOAuthStart(request, env) {
   const url = new URL("https://www.tumblr.com/oauth2/authorize");
   url.searchParams.set("client_id", requiredEnv(env, "TUMBLR_CLIENT_ID"));
   url.searchParams.set("response_type", "code");
-  url.searchParams.set("scope", "basic write");
+  url.searchParams.set("scope", "basic write offline_access");
   url.searchParams.set("state", state);
   url.searchParams.set("redirect_uri", TUMBLR_REDIRECT_URI);
 
@@ -130,7 +130,7 @@ async function handleTumblrOAuthCallback(request, env) {
     access_token: String(payload.access_token),
     refresh_token: payload.refresh_token ? String(payload.refresh_token) : null,
     expires_in: Number(payload.expires_in || 3600),
-    scope: payload.scope ? String(payload.scope) : "basic write",
+    scope: payload.scope ? String(payload.scope) : "basic write offline_access",
   });
 
   return html("<p><strong>Authorization complete.</strong></p><p>Tumblr OAuth tokens were stored in the LifeToLife Durable Object. No token value is shown here.</p><p>You can return to the terminal.</p>");
@@ -255,7 +255,7 @@ export class WordPressAuthState extends BaseWordPressAuthState {
     await this.ctx.storage.put("tumblr_access_token", access_token);
     if (refresh_token) await this.ctx.storage.put("tumblr_refresh_token", refresh_token);
     await this.ctx.storage.put("tumblr_access_expires_at", Date.now() + expiresIn * 1000);
-    await this.ctx.storage.put("tumblr_scope", scope || "basic write");
+    await this.ctx.storage.put("tumblr_scope", scope || "basic write offline_access");
     await this.ctx.storage.put("tumblr_bootstrap_source", "oauth2-authorization-code");
     return { ok: true, secret_values_returned: false };
   }
