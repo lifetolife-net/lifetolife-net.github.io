@@ -8,7 +8,12 @@ WORKERS_DEV_ORIGIN="https://lifetolife-distribution-agent.jisooyoun-cafe.workers
 AGENT_KEY_FILE="${HOME}/.config/lifetolife/distribution-agent-key"
 NAMESPACE_SUFFIX="TOKEN_STATE"
 TMP_DIR="$(mktemp -d)"
-trap 'rm -rf "$TMP_DIR"' EXIT
+CONFIG_FILE="$PWD/.wrangler-token-state-v6.$$.toml"
+cleanup() {
+  rm -rf "$TMP_DIR"
+  rm -f "$CONFIG_FILE"
+}
+trap cleanup EXIT
 
 if [[ ! -f "$AGENT_KEY_FILE" ]]; then
   echo "Missing Distribution Agent key: $AGENT_KEY_FILE" >&2
@@ -73,11 +78,10 @@ fi
 echo "TOKEN_STATE namespace ID: $KV_ID"
 echo 'KV namespace IDs are non-secret Cloudflare resource identifiers.'
 
-printf '\n[2/6] Build an explicit v6 Wrangler config and validate it\n'
-CONFIG_FILE="$TMP_DIR/wrangler-v6.toml"
+printf '\n[2/6] Build an explicit v6 Wrangler config beside worker-v6.js\n'
 cat > "$CONFIG_FILE" <<EOF
 name = "lifetolife-distribution-agent"
-main = "$PWD/worker-v6.js"
+main = "worker-v6.js"
 compatibility_date = "2026-08-14"
 workers_dev = true
 
@@ -95,7 +99,7 @@ import pathlib, sys
 text = pathlib.Path(sys.argv[1]).read_text(encoding="utf-8")
 required = [
     'name = "lifetolife-distribution-agent"',
-    'worker-v6.js',
+    'main = "worker-v6.js"',
     'binding = "TOKEN_STATE"',
     'distribution-api.lifetolife.net',
 ]
