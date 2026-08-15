@@ -1,5 +1,5 @@
 name = "lifetolife-distribution-agent"
-main = "worker-v4.js"
+main = "worker-v5.js"
 compatibility_date = "2026-08-14"
 workers_dev = true
 
