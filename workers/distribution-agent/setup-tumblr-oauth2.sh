@@ -57,8 +57,8 @@ print(json.dumps({
     "bootstrap_source": p.get("bootstrap_source"),
     "secret_values_returned": p.get("secret_values_returned"),
 }, indent=2))
-if not p.get("ok") or not p.get("has_access_token"):
-    raise SystemExit("Tumblr OAuth verification failed")
+if not p.get("ok") or not p.get("has_access_token") or not p.get("has_refresh_token"):
+    raise SystemExit("Tumblr OAuth verification failed: durable refresh token missing")
 PY
 
-printf '\nTumblr OAuth bootstrap: VERIFIED\nNo Tumblr post was created by this script.\n'
+printf '\nTumblr OAuth bootstrap: VERIFIED\nRefresh-token continuity: VERIFIED\nNo Tumblr post was created by this script.\n'
