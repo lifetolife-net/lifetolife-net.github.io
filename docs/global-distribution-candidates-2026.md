@@ -9,9 +9,11 @@ The exact historical 50-name roster was not preserved in the repository or the G
 ## Selection rules
 
 - Target size is exactly **Core 15 + Backup 35 = 50 platform/channel endpoints**.
-- A candidate must have a realistic official write/publish API, official automation interface, or open publishing protocol. Browser-only workaround automation does not qualify.
+- A candidate may be classified as either **Auto Publish** or **Assisted Manual**.
+- `Auto Publish` means the Distribution Agent performs the final provider API publish/upload.
+- `Assisted Manual` means the Agent still transforms the source into a platform-ready package, but the human performs the final platform publish action.
+- A platform can remain strategically Core even when final posting is manual if discovery value is high and API integration cost/review friction is not worth maintaining.
 - Account opening, API access, live publish verification, and common Distribution Agent integration are separate milestones.
-- High-reach but gated APIs may remain Core; the operational activation queue can still favor a lower-friction Core candidate first.
 - Regional coverage is preserved through global and regional channels relevant to South America, Southeast Asia, India, Japan, Europe/CIS, and the open/federated web.
 - Secrets never belong in this file or the Google Sheets ledger.
 - API policy changes are expected. Re-check official documentation again immediately before spending money, requesting a review, or building a provider-specific adapter.
@@ -28,25 +30,37 @@ The exact historical 50-name roster was not preserved in the repository or the G
 | 6 | Blogger | Blogger API `posts.insert` -> `posts.get` | Google OAuth | **Verified + Agent integrated** |
 | 7 | Bluesky | AT Protocol `createRecord` -> `getRecord` | App Password / session | **Verified + Agent integrated** |
 | 8 | Pinterest | Pinterest API v5 `POST /pins` | Trial/Standard API approval | **Trial approval pending** |
-| 9 | TikTok | Content Posting API Direct Post | Public posting requires app review/audit | API confirmed; unopened |
+| 9 | TikTok | Content Posting API exists, but not used operationally | Public Direct Post requires app review/audit | **Core · Assisted Manual** |
 | 10 | LinkedIn | Posts API `POST /rest/posts` | Product/permission access | API confirmed; unopened |
-| 11 | Reddit | Reddit Developer Platform user actions / submit post | App/platform approval and community policy | API confirmed; unopened |
-| 12 | Telegram Channel | Bot API `sendMessage` to channel | Bot must be channel administrator | API confirmed; unopened |
-| 13 | Mastodon | `POST /api/v1/statuses` -> status re-query | Instance account + user token | **Opening started; v8 adapter committed; account/token pending** |
+| 11 | Reddit | Reddit Developer Platform user actions / submit post | App/platform approval and community policy | API confirmed; unopened; assisted-manual suitability under review |
+| 12 | Telegram Channel | Bot API `sendMessage` to channel | Bot must be channel administrator | API confirmed; low discovery value; Core status under review |
+| 13 | Mastodon | `POST /api/v1/statuses` -> status re-query | Instance account + user token | Adapter prepared; activation paused pending instance/policy fit |
 | 14 | Tumblr | Tumblr API v2 create post | OAuth app/user auth | API confirmed; unopened |
 | 15 | Dailymotion | API v2 upload + video create/publish | Developer credentials + `video.manage` | API confirmed; unopened |
 
 ### Core interpretation
 
-The Core table is a **strategic portfolio**, not the account-opening order. The current 7 Verified channels remain Core. Pinterest stays Core despite approval latency because of its discovery value. TikTok, LinkedIn, and Reddit stay Core despite review friction because of reach/community value.
+The Core table is a **strategic portfolio**, not merely an API-automation list.
 
-The operational activation queue prioritizes low-friction paths that can become fully verified without blocking on platform review.
+The current 7 Verified channels remain the automated foundation. Pinterest remains Core despite approval latency because of discovery value. TikTok remains Core because of discovery value, but LifeToLife will **not** pursue TikTok Direct Post API approval for now. Instead the Agent will prepare a TikTok-ready publishing package and the human will perform the final upload/publish in the TikTok app.
+
+For TikTok, the Agent package should include when relevant:
+
+- final video/image asset selection,
+- platform-ready caption,
+- concise hashtags,
+- cover/title suggestion,
+- upload notes,
+- link/CTA recommendation,
+- AI-generated-content disclosure guidance when applicable.
+
+The final TikTok publish action remains manual.
 
 ## Backup 35
 
 | Rank | Platform / channel | Primary write path | 2026 decision / caveat |
 |---:|---|---|---|
-| 16 | X | X API v2 `POST /2/tweets` | API confirmed; **deferred because write access is pay-per-use** |
+| 16 | X | X API v2 exists but is intentionally not integrated | **Assisted Manual**: existing account; Agent prepares X-ready draft, human posts |
 | 17 | Vimeo | Vimeo video upload API | API confirmed; upload access may require developer approval |
 | 18 | Apple News | Apple News API article create/publish | API confirmed; Publisher/channel approval required |
 | 19 | DEV Community / Forem | Forem API create article | API confirmed |
@@ -73,7 +87,7 @@ The operational activation queue prioritizes low-friction paths that can become 
 | 40 | Write.as / WriteFreely | Write.as/WriteFreely post APIs | API confirmed; host-specific auth varies |
 | 41 | Micro.blog | Micropub publishing | Official publishing protocol supported |
 | 42 | SoundCloud | API track upload | API confirmed; OAuth/app access applies |
-| 43 | Podbean | Upload + publish episode API | Official API docs exist; **reconfirm before activation because API documentation is older** |
+| 43 | Podbean | Upload + publish episode API | Official API docs exist; reconfirm before activation because API documentation is older |
 | 44 | Discourse | API create topic/post | API confirmed |
 | 45 | ActivityPub self-hosted actor | W3C ActivityPub client/server + federation | Protocol confirmed; requires own actor/server implementation |
 | 46 | WebSub + RSS distribution | W3C WebSub around canonical RSS/Atom | Protocol confirmed; syndication endpoint rather than hosted audience |
@@ -82,33 +96,46 @@ The operational activation queue prioritizes low-friction paths that can become 
 | 49 | GitHub Discussions | GraphQL `createDiscussion` | API confirmed; developer/community distribution |
 | 50 | GIPHY | Upload API | API confirmed; developer/production key limits apply |
 
+## Assisted Manual channels
+
+### TikTok
+
+Operational decision: **do not integrate the Content Posting API for now**.
+
+During every relevant distribution run, the Agent should produce a TikTok-ready package. The human receives a reminder and performs the final publish. This avoids app-review/audit work while retaining TikTok's discovery value.
+
+### X
+
+Operational decision: **do not integrate the X posting API**.
+
+During every relevant distribution run, the Agent should produce an `x_ready_draft` optimized for X rather than copying another channel's text. The draft should adapt hook, length, thread-vs-single-post choice, link use, and media caption. The human performs the final publish using the existing X account.
+
 ## Explicit exclusions from the canonical 50
 
 ### Medium
 
-Medium is **not** in the 2026 canonical candidate network. Its official API repository states that the API is no longer supported and that new integrations are not accepted. Historical API availability is not sufficient for LifeToLife's unattended publishing requirement.
+Medium is not in the 2026 canonical candidate network because the official API is no longer supported for new integrations.
 
 ### Browser-only or unofficial automation
 
-Platforms without a currently credible official write/publish interface are excluded even if they have large audiences. They can be reconsidered only if an official API or supported partner interface becomes available.
+Platforms without a credible official publishing interface remain outside the canonical 50 unless they are deliberately handled as Assisted Manual channels for strategic discovery value.
 
 ## Regional coverage check
 
-The 50-candidate portfolio preserves meaningful regional reach without relying on unofficial automation:
-
-- **South America:** Facebook, Instagram, YouTube, Threads, TikTok, Telegram, X backup.
-- **India / South Asia:** YouTube, Instagram, Facebook, Telegram, TikTok.
-- **Southeast Asia:** Facebook, Instagram, YouTube, TikTok, Telegram, LINE, Viber.
-- **Japan:** YouTube, Instagram, X backup, LINE Official Account, Hatena, Qiita, Misskey.
-- **Europe / CIS:** Telegram, Mastodon/fediverse, Viber, OK.ru.
+- **South America:** Facebook, Instagram, YouTube, Threads, TikTok, X.
+- **India / South Asia:** YouTube, Instagram, Facebook, TikTok.
+- **Southeast Asia:** Facebook, Instagram, YouTube, TikTok, LINE, Viber.
+- **Japan:** YouTube, Instagram, X, LINE Official Account, Hatena, Qiita, Misskey.
+- **Europe / CIS:** Mastodon/fediverse, Viber, OK.ru.
 - **Open/federated web:** Bluesky/AT Protocol, Mastodon, Lemmy, PeerTube, Misskey, ActivityPub, WebSub, Nostr.
 
-## Operational activation queue after the current 7 Verified channels
+## Current activation logic after the 7 Verified automated channels
 
-1. **Mastodon** — next. Official write API is straightforward and the Agent v8 adapter is already committed. Human boundary: account creation, password/email confirmation, and access-token creation.
-2. **Telegram Channel** — low-friction Bot API; create channel + bot, make bot administrator, verify send + readback/authoritative message identity where possible.
-3. **Tumblr** — OAuth + create-post path.
-4. **Dailymotion** — second automated video endpoint.
-5. Continue the high-reach gated Core paths in parallel: Pinterest approval, TikTok app review, LinkedIn product/permission setup, Reddit developer access.
+- **TikTok:** Assisted Manual; no API approval work for now.
+- **X:** Assisted Manual; no API integration work.
+- **Pinterest:** keep approval wait state; verify immediately when Trial access arrives.
+- **Dailymotion / Tumblr:** strongest remaining candidates for the next fully automated channel opening.
+- **LinkedIn / Reddit:** keep under review because discovery value is meaningful but permission/community friction is higher.
+- **Telegram / Mastodon:** retain as candidates, but do not prioritize merely because their APIs are easy; discovery value and operating-policy fit matter.
 
-The activation queue can change when a pending approval arrives, but the Core 15 membership should remain stable unless an API is withdrawn or a materially better official distribution endpoint appears.
+The next fully automated channel should be selected by **discovery value × automation value × friction**, not by API simplicity alone.
