@@ -1,5 +1,5 @@
 name = "lifetolife-distribution-agent"
-main = "worker-v8.js"
+main = "worker-v8-tumblr-publish.js"
 compatibility_date = "2026-08-14"
 workers_dev = true
 
