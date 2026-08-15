@@ -74,14 +74,19 @@ function mastodonBaseUrl(env) {
 }
 
 async function mastodonJson(env, path, { method = "GET", body, idempotencyKey } = {}) {
+  const encodedBody = body !== undefined
+    ? new URLSearchParams(
+        Object.entries(body).filter(([, value]) => value !== undefined && value !== null)
+      ).toString()
+    : undefined;
   const response = await fetch(`${mastodonBaseUrl(env)}${path}`, {
     method,
     headers: {
       Authorization: `Bearer ${requiredEnv(env, "MASTODON_ACCESS_TOKEN")}`,
-      ...(body !== undefined ? { "content-type": "application/json" } : {}),
+      ...(body !== undefined ? { "content-type": "application/x-www-form-urlencoded;charset=UTF-8" } : {}),
       ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
     },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: encodedBody,
   });
   const payload = await readJsonResponse(response);
   if (!response.ok || payload?.error) {
