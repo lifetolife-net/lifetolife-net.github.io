@@ -10,7 +10,7 @@ This document is the canonical progress record for LifeToLife's global distribut
 - `Auto Publish`: the Distribution Agent performs the final provider API publish/upload and verifies the created object where possible.
 - `Assisted Manual`: the Agent prepares a platform-native publishing package, but the human performs the final publish action.
 - A channel is **Verified** only after an automated publish/upload succeeds and remains authoritative/re-readable where the platform permits it.
-- Do not integrate an API merely because it exists. Discovery value, review burden, maintenance cost, platform policy fit, and the value of automating the final click all matter.
+- Do not integrate an API merely because it exists. Discovery value, search value, review burden, maintenance cost, platform policy fit, and the value of automating the final click all matter.
 - Never store passwords, API keys, app passwords, access tokens, refresh tokens, client secrets, authorization codes, PKCE verifiers, or the Distribution Agent authorization key in GitHub or the Google Sheets ledger.
 - Every distribution milestone must be mirrored in this document and `LifeToLife_Global_Distribution_Account_Ledger`.
 
@@ -47,13 +47,7 @@ Decision: **do not integrate the X posting API**.
 
 Reason: posting itself is simple enough that OAuth/API cost and maintenance are not worth automating the final click.
 
-During each relevant distribution run, the Agent should create an `x_ready_draft` that is native to X rather than copied from another channel. It should adapt:
-
-- opening hook,
-- post length,
-- single post vs short thread,
-- link inclusion only when useful,
-- media caption / accompanying text.
+During each relevant distribution run, the Agent should create an `x_ready_draft` that is native to X rather than copied from another channel. It should adapt opening hook, post length, single post vs short thread, link inclusion only when useful, and media caption/accompanying text.
 
 After the automated channels finish, the user should be shown the X-ready draft with a clear reminder to publish it manually.
 
@@ -63,17 +57,35 @@ Decision: **do not pursue TikTok Content Posting API approval/audit for now**.
 
 TikTok remains strategically Core because of discovery value, but final publishing is **Assisted Manual**.
 
-During each relevant distribution run, the Agent should prepare a TikTok-ready package containing when applicable:
-
-- final video/image asset choice,
-- caption,
-- concise hashtags,
-- cover/title suggestion,
-- upload notes,
-- CTA/link recommendation,
-- AI-generated-content disclosure guidance when applicable.
+During each relevant distribution run, the Agent should prepare a TikTok-ready package containing when applicable final video/image asset choice, caption, concise hashtags, cover/title suggestion, upload notes, CTA/link recommendation, and AI-generated-content disclosure guidance when applicable.
 
 The user performs the final publish in TikTok. No TikTok posting token, OAuth lifecycle, or Direct Post integration is required under the current policy.
+
+### Reddit — owned subreddit SEO/discovery channel
+
+Decision: **keep Reddit Core, but use the user's own subreddit as an Assisted Manual public search/discovery archive**.
+
+This is intentionally different from mass-posting into unrelated communities.
+
+During each relevant distribution run, the Agent should prepare a `reddit_ready_post` containing:
+
+- a natural search-oriented title,
+- a substantial self-contained body,
+- an optional canonical LifeToLife link only when it adds value,
+- subreddit-appropriate context,
+- no repetitive thin-link/spam pattern.
+
+The user performs the final Reddit post for now.
+
+Reason for the manual boundary: Reddit's 2026 API rules require approval for API access and impose additional restrictions for business/commercial use. Manual posting to the user's own subreddit preserves search/discovery value without taking on unnecessary API approval and commercial-use risk.
+
+Google Search explicitly supports forum/social discussion content in search features such as Discussions and Forums and first-person-perspective surfaces. Appearance is never guaranteed, but a public Reddit post is structurally well suited to being crawled and indexed as forum/social content.
+
+## Core portfolio changes on 2026-08-15
+
+- **LinkedIn removed from Core** and moved to Backup/deprioritized. Its professional-network fit and review burden do not justify priority for broad LifeToLife distribution.
+- **Vimeo promoted to Core** as a professional video distribution candidate.
+- **Reddit remains Core**, now explicitly classified as `Assisted Manual · owned-subreddit SEO`.
 
 ## Channels under active comparison for the next fully automated integration
 
@@ -89,17 +101,11 @@ The user performs the final publish in TikTok. No TikTok posting token, OAuth li
 - Supports text/media/blog-style distribution with native discovery through tags/reblogs.
 - Candidate for the next automated channel.
 
-### LinkedIn
+### Vimeo
 
-- Official Posts API exists.
-- Permission/product review friction is meaningful.
-- Keep Core/strategic, but do not prioritize solely for API completeness.
-
-### Reddit
-
-- Official developer posting actions exist.
-- High discovery value, but subreddit-specific rules make blind cross-post automation unsuitable.
-- Assisted Manual may ultimately be more appropriate than common broadcast automation.
+- Official upload API exists.
+- Promoted to Core after LinkedIn removal.
+- Useful as another video-distribution endpoint; activation friction still needs direct verification before implementation.
 
 ### Telegram Channel
 
@@ -113,6 +119,12 @@ The user performs the final publish in TikTok. No TikTok posting token, OAuth li
 - A v8 adapter and setup helper were prepared in GitHub.
 - Activation is **paused** because instance policy fit and discovery value must be justified first.
 - The adapter has not been deployed or verified and does not count toward the Verified total.
+
+### LinkedIn
+
+- Official Posts API exists.
+- **Removed from Core and deprioritized**.
+- No current implementation work planned.
 
 ## Distribution Agent infrastructure
 
@@ -156,7 +168,7 @@ As of 2026-08-15 KST:
 - Canonical candidates: **50 = Core 15 + Backup 35**.
 - Auto Publish Verified: **7** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads.
 - API approval pending: **1** — Pinterest.
-- Assisted Manual explicitly adopted: **2** — X and TikTok.
+- Assisted Manual explicitly adopted: **3** — X, TikTok, Reddit.
 - Prepared but paused/unverified adapter: **Mastodon**.
 
 ## Current decision rule for the next channel
@@ -171,7 +183,7 @@ Immediate comparison priority:
 
 1. Dailymotion
 2. Tumblr
-3. LinkedIn / Reddit depending permission and community-fit tradeoffs
+3. Vimeo
 4. Pinterest immediately if Trial approval arrives
 
-X and TikTok are not API-integration tasks under the current policy; they are Agent-generated, human-posted channels.
+X, TikTok, and Reddit are not API-integration tasks under the current policy; they are Agent-generated, human-posted channels. LinkedIn is deprioritized.
