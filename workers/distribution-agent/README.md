@@ -1,135 +1,165 @@
 # LifeToLife Distribution Agent
 
-Cloudflare Worker entry point for the common LifeToLife publishing pipeline.
+Cloudflare Worker for the common LifeToLife publishing pipeline.
 
 Production endpoint:
 
 - `https://distribution-api.lifetolife.net`
 
-## Integrated targets
+## Current state
 
-The Agent intentionally reuses only publishing paths that were individually verified for LifeToLife before integration.
+Verified common-Agent targets:
 
-### Meta group
+- Facebook
+- Instagram
+- Threads
+- Blogger
+- Bluesky
 
-- Facebook Page: text post through `/{page-id}/feed`, followed by persistent re-query
-- Instagram Business: image container through `/{ig-user-id}/media`, publish through `/{ig-user-id}/media_publish`, followed by persistent re-query
-- Threads: text container through `/me/threads`, publish through `/me/threads_publish`, followed by persistent re-query
+Implemented and awaiting live Agent verification:
 
-Meta 3-target integration was verified on 2026-08-15 KST.
+- WordPress.com (verified-path v3, draft-only for the first integration pass)
 
-### Text publishing group
+Standalone Verified but not yet implemented in the Agent:
 
-- Bluesky: App Password -> `com.atproto.server.createSession` -> `com.atproto.repo.createRecord` -> `com.atproto.repo.getRecord`
-- Blogger: OAuth refresh token -> fresh Google access token -> Blogger `posts.insert` -> `posts.get`
+- YouTube
 
-The Bluesky/Blogger adapter code is implemented in verified-path v2. Actual integrated publishing must be verified before these two targets are marked Agent-integrated in the canonical progress record.
+Pinterest remains pending API Trial approval.
 
-## Secret policy
-
-Do not commit any token, app password, OAuth client secret, or Distribution Agent key.
-
-Worker credentials are stored through Wrangler secrets. The local Distribution Agent authorization key is stored outside the repository at:
-
-- `~/.config/lifetolife/distribution-agent-key`
-
-with file mode `600`.
-
-The existing Blogger OAuth files remain outside the repository at:
-
-- `~/.lifetolife-distribution/blogger/credentials.json`
-- `~/.lifetolife-distribution/blogger/token.json`
-
-`setup-bluesky-blogger.sh` reads those files locally and sends only the required values to Cloudflare Worker Secrets. It does not print or commit them.
-
-## Meta deployment / verification
-
-```bash
-bash deploy-meta.sh
-```
-
-The script deploys the Worker, installs Meta secrets, checks `/health`, performs a dry run, and executes a Meta integrated publishing test.
-
-For a Facebook Page token repair without repeating successful Instagram/Threads test posts:
-
-```bash
-bash fix-facebook-token.sh
-```
-
-## Bluesky + Blogger setup / verification
-
-```bash
-bash setup-bluesky-blogger.sh
-```
-
-The script:
-
-1. validates the existing local Blogger OAuth credential/token files,
-2. extracts Blogger client ID, optional client secret, and refresh token without printing them,
-3. installs Blogger values as Worker secrets,
-4. securely prompts once for the Bluesky App Password,
-5. installs the Bluesky handle and App Password as Worker secrets,
-6. deploys verified-path v2,
-7. checks `/health`,
-8. performs a Bluesky+Blogger dry run,
-9. performs one real integrated publish to Bluesky and Blogger with persistent API re-query,
-10. saves the combined response to `/tmp/lifetolife-bluesky-blogger-integrated-test.json`.
-
-Known fixed identifiers used by the script:
-
-- Bluesky: `lifetolife-net.bsky.social`
-- Blogger Blog ID: `6980894376000692850`
-
-## API endpoints
-
-### Common endpoint
+## Common API
 
 `POST /v1/publish`
 
-`targets` is required and can currently contain:
+Current target names:
 
 - `facebook`
 - `instagram`
 - `threads`
 - `bluesky`
 - `blogger`
+- `wordpress`
 
-Example:
+Backward-compatible Meta route:
+
+- `POST /v1/publish/meta`
+
+When `targets` is omitted on the Meta route, Facebook, Instagram, and Threads are targeted.
+
+## Verified adapter paths
+
+- Facebook: Page `/feed` -> persistent re-query
+- Instagram: `/media` -> container ready -> `/media_publish` -> re-query
+- Threads: `/threads` -> `/threads_publish` -> re-query
+- Blogger: Google refresh token -> access token -> `posts.insert` -> `posts.get`
+- Bluesky: App Password + stable DID -> `createSession` -> `createRecord` -> `getRecord`
+
+## WordPress.com v3 adapter
+
+The v3 adapter deliberately preserves the already-verified WordPress.com path instead of switching APIs:
+
+1. OAuth 2.1 refresh token -> fresh access token
+2. MCP `initialize`
+3. `notifications/initialized`
+4. `tools/call` using `wpcom-mcp-content-authoring`
+5. `posts.create` as **draft**
+6. `posts.get` in the same MCP session for persistent verification
+
+Endpoints:
+
+- OAuth token: `https://public-api.wordpress.com/oauth2-1/token`
+- MCP: `https://public-api.wordpress.com/wpcom/v2/mcp/v1`
+
+Site:
+
+- `lifetolifeglobal.wordpress.com`
+
+The first Agent integration remains draft-only because draft creation is the WordPress path already independently verified. Live publish should be enabled only after the draft adapter is verified and the token lifecycle is stable.
+
+### WordPress setup / verification
+
+Run:
 
 ```bash
-curl -s -X POST "https://distribution-api.lifetolife.net/v1/publish" \
-  -H "Authorization: Bearer $DISTRIBUTION_AGENT_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "title": "LifeToLife example",
-    "text": "LifeToLife common Distribution Agent example",
-    "targets": ["bluesky", "blogger"]
-  }'
+bash setup-wordpress.sh
 ```
 
-### Backward-compatible Meta endpoint
+The script:
 
-`POST /v1/publish/meta`
+1. searches for the previously verified local WordPress.com OAuth token JSON without printing secrets,
+2. validates the refresh token at the OAuth 2.1 token endpoint,
+3. preserves a rotated refresh token if WordPress returns one,
+4. stores the site, client ID, and effective refresh token as Worker secrets,
+5. deploys verified-path v3,
+6. checks `/health`,
+7. performs a no-write dry run,
+8. creates exactly one WordPress.com draft through the common Agent,
+9. re-reads the created draft through MCP,
+10. saves the response to `/tmp/lifetolife-wordpress-agent-test.json`.
 
-This remains available for the already-verified Meta pipeline. When `targets` is omitted on this endpoint, Facebook, Instagram, and Threads are targeted.
+If the old token file cannot be found or the refresh token has expired, the script stops instead of silently starting a new OAuth authorization flow.
+
+## Other setup scripts
+
+Meta initial setup / verification:
+
+```bash
+bash deploy-meta.sh
+```
+
+Facebook credential-only repair:
+
+```bash
+bash fix-facebook-token.sh
+```
+
+Bluesky + Blogger setup:
+
+```bash
+bash setup-bluesky-blogger.sh
+```
+
+Bluesky credential/DID repair:
+
+```bash
+bash fix-bluesky-password.sh
+```
 
 ## Content fields
 
 - `text`: required
 - `targets`: required on `/v1/publish`
-- `title`: optional; used by Blogger
-- `html`: optional; used by Blogger instead of escaped/plain-text HTML conversion
+- `title`: optional; used by Blogger and WordPress.com
+- `html`: optional; used by Blogger and WordPress.com
 - `image_url`: required when Instagram is targeted
 - `dry_run`: optional boolean
 
+WordPress.com currently always creates a draft in verified-path v3.
+
 ## Result semantics
 
-Each target returns its own result. A target is considered successful only after publishing and a follow-up API read of the created object succeed.
+Each target returns its own result and is successful only after publishing/creation plus an authoritative follow-up read.
 
 - HTTP `200`: all requested targets succeeded
-- HTTP `207`: at least one requested target failed, with per-target results preserved
-- HTTP `400`: invalid common request or missing configuration before target execution
+- HTTP `207`: at least one target failed; per-target results remain available
+- HTTP `400`: invalid common request or missing configuration
 
-## Google OAuth lifecycle note
+## Secret policy
 
-The Blogger OAuth project has been operating in Google's Testing lifecycle. Google documents that refresh tokens for an External consent screen in Testing generally expire after 7 days when non-basic scopes are involved. The current Blogger integration can therefore be verified now, but stable unattended production requires moving the OAuth consent configuration out of the temporary Testing lifecycle or otherwise establishing a production-stable authorization setup.
+Never commit passwords, app passwords, OAuth access/refresh tokens, client secrets, or the Distribution Agent key.
+
+Production credentials are stored as Cloudflare Worker secrets. The local Distribution Agent key remains outside the repository at:
+
+- `~/.config/lifetolife/distribution-agent-key`
+
+Existing Blogger OAuth files remain outside the repository at:
+
+- `~/.lifetolife-distribution/blogger/credentials.json`
+- `~/.lifetolife-distribution/blogger/token.json`
+
+The WordPress setup script searches existing local credential files and sends only the required values to Worker secrets; values are never written to this repository.
+
+## Remaining sequence
+
+1. Verify WordPress.com through the common Agent.
+2. Integrate YouTube.
+3. Harden the 7-channel Agent with stable OAuth lifecycle handling, idempotency, retries, logging, channel-specific content transformation, secret rotation, and scheduling.
