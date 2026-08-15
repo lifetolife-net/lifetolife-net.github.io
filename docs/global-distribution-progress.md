@@ -17,17 +17,17 @@ This document is the canonical progress record for LifeToLife's global distribut
 
 The original global rollout target is **core 15 + backup 35 = 50 API-capable platform/channel candidates**.
 
-- The number `50` refers to platform/channel endpoints in the candidate distribution network, **not necessarily 50 separate login accounts**. A single management identity can control multiple channels, as with the Meta portfolio.
+- `50` means platform/channel endpoints in the candidate distribution network, not necessarily 50 separate login accounts.
 - The currently verified 7 channels are the first completed integration tranche, not the end of channel rollout.
-- Continue account/API opening toward the **core 15** first, then validate the **backup 35** in priority order.
-- Candidate selection should preserve the original constraints: automation-capable API/MCP path, audience/reach weighting, and regional coverage including South America, Southeast Asia, and India.
-- A platform whose current API automation path is uncertain remains a candidate only; do not create an account or use browser-workaround automation until the official automation path is verified.
+- Continue toward the **core 15** first, then validate the **backup 35** in priority order.
+- Candidate selection preserves the original constraints: official API/MCP automation path, audience/reach weighting, and regional coverage including South America, Southeast Asia, and India.
+- A platform whose official automation path is uncertain remains a candidate only; do not rely on browser-workaround automation.
 
 ## Current channel status
 
 | Channel | Public account / handle | Standalone automation | Distribution Agent | Next action |
 |---|---|---|---|---|
-| WordPress.com | `lifetolifeglobal.wordpress.com` | **Verified** | **Verified + integrated** | Connect persistent refresh-token rotation state |
+| WordPress.com | `lifetolifeglobal.wordpress.com` | **Verified** | **Verified + integrated** | Replace rotating-token KV experiment with strongly consistent Durable Object auth state |
 | Pinterest | LifeToLife | **Pending Trial approval** | Not applicable yet | Wait for approval, then verify actual pin creation |
 | Bluesky | `@lifetolife-net.bsky.social` | **Verified** | **Verified + integrated** | Operate through Agent; optional domain handle later |
 | Blogger | LifeToLife / `lifetolife-net` | **Verified** | **Verified + integrated** | Stabilize Google OAuth lifecycle |
@@ -48,7 +48,20 @@ The original global rollout target is **core 15 + backup 35 = 50 API-capable pla
 - Re-query confirmed the same ID, `draft` status, title, link, and modified timestamp.
 - OAuth response returned `expires_in=3600` and `refresh_token_rotated=true`.
 
-Conclusion: **WordPress.com draft creation through the common Distribution Agent is Verified.** Persistent runtime storage for rotated refresh tokens remains an operational hardening requirement. Current `/health` has reported `wordpress_token_state_bound: false`.
+Conclusion: **WordPress.com draft creation through the common Distribution Agent is Verified.**
+
+Operational hardening history on 2026-08-15 KST:
+
+1. A Workers KV `TOKEN_STATE` binding was prototyped to preserve rotated WordPress OAuth 2.1 refresh tokens.
+2. The KV verification did **not** complete successfully.
+3. Workers KV is eventually consistent and can cache previous values or negative lookups, so it is not a safe authoritative store for a refresh token that rotates and must be read immediately by the next request.
+4. The KV approach is therefore rejected as the long-lived WordPress auth-state architecture; it is retained only as a one-time migration source because the failed experiment may have written the newest rotated token there.
+5. `worker-v7.js` and `setup-wordpress-auth-do.sh` replace ongoing token state with a SQLite-backed Durable Object class `WordPressAuthState`.
+6. The Durable Object owns refresh/access token state, serializes refresh work, stores the rotated token before returning, caches the current access token until near expiry, and exposes no secret values in verification output.
+7. The existing KV value is tried first only during bootstrap/migration; the Worker secret is a fallback bootstrap candidate. Ongoing refresh-token rotation does not rely on KV.
+8. v7 also routes actual WordPress `/v1/publish` operations through the Durable Object-backed access-token path, rather than using strongly consistent state only in a test endpoint.
+
+Current state: **channel integration remains Verified; unattended rotating-token storage is pending Durable Object v7 verification.**
 
 ### Bluesky
 
@@ -147,8 +160,9 @@ Conclusion: **Threads text publishing through the common Distribution Agent is V
 - Backward-compatible Meta route: `POST /v1/publish/meta`
 - YouTube multipart upload route: `POST /v1/publish/youtube`
 - YouTube verification-only route: `POST /v1/verify/youtube`
-- Current deployed mode during final YouTube verification: `verified-path-v5`
 - Integrated and verified targets: `facebook`, `instagram`, `threads`, `blogger`, `bluesky`, `wordpress`, `youtube`
+- `worker-v7.js` is prepared for WordPress Durable Object auth-state verification.
+- v7 WordPress auth verification route: `POST /v1/verify/wordpress-auth-state`.
 
 Verified adapter paths:
 
@@ -157,7 +171,7 @@ Verified adapter paths:
 - Threads: `/threads` -> `/threads_publish` -> re-query
 - Blogger: OAuth refresh -> `posts.insert` -> `posts.get`
 - Bluesky: App Password + stable DID -> `createSession` -> `createRecord` -> `getRecord`
-- WordPress.com: OAuth 2.1 refresh -> MCP initialize -> draft `posts.create` -> `posts.get`
+- WordPress.com: OAuth 2.1 -> Durable Object auth state (v7 pending verification) -> MCP initialize -> draft `posts.create` -> `posts.get`
 - YouTube: Google OAuth refresh -> resumable `videos.insert` -> binary upload -> `videos.list` processing verification
 
 All provider credentials and the Distribution Agent authorization key are stored outside GitHub and the account ledger.
@@ -212,11 +226,12 @@ As of 2026-08-15 KST:
 
 ## Immediate queue
 
-1. Repair and complete persistent WordPress refresh-token rotation state (`TOKEN_STATE`) without creating content.
-2. Restore/confirm the canonical **core 15 + backup 35** candidate roster before opening the next account; current repository records contain the 7 completed channels and Pinterest, but not the full original 50-name roster.
-3. Continue account creation/API verification until the **core 15** is filled, using official API/MCP paths only.
-4. After the core 15, validate the backup 35 in weighted priority order, preserving global regional coverage including South America, Southeast Asia, and India.
-5. Keep production hardening in parallel where it blocks unattended operation: Google OAuth lifecycle, idempotency, retry/backoff, structured logs, secret rotation, and scheduling.
-6. Keep Pinterest in approval-wait state; do not repeatedly check it manually.
-7. Cleanup of verification posts/videos is optional and non-blocking.
-8. Keep this document and the Google Sheets account ledger synchronized after every milestone.
+1. Deploy/verify `worker-v7.js` with SQLite-backed `WordPressAuthState` Durable Object, using the legacy `TOKEN_STATE` KV only as a one-time migration source if it contains the newest rotated token.
+2. After v7 succeeds, remove the legacy KV binding from ongoing WordPress auth-state operation and synchronize the canonical Wrangler config.
+3. Restore/confirm the canonical **core 15 + backup 35** candidate roster before opening the next account; the current repository still does not contain the full original 50-name roster.
+4. Continue account creation/API verification until the **core 15** is filled, using official API/MCP paths only.
+5. After the core 15, validate the backup 35 in weighted priority order, preserving global regional coverage including South America, Southeast Asia, and India.
+6. Keep production hardening in parallel where it blocks unattended operation: Google OAuth lifecycle, idempotency, retry/backoff, structured logs, secret rotation, and scheduling.
+7. Keep Pinterest in approval-wait state; do not repeatedly check it manually.
+8. Cleanup of verification posts/videos is optional and non-blocking.
+9. Keep this document and the Google Sheets account ledger synchronized after every milestone.
