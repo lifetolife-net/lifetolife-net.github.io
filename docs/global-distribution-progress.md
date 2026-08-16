@@ -6,14 +6,18 @@ This document is the canonical progress record for LifeToLife's global distribut
 
 ## Operating principle
 
-- **Never blind-cross-post the same source text across platforms.** Every distribution run must transform source content into a platform-native distribution package before publish or hand-off.
-- Canonical transformation policy: `docs/global-distribution-platform-native-policy.md`.
+- **Never blind-cross-post the same source text across platforms.**
+- Canonical end-to-end publication process: `docs/global-publication-pipeline.md`.
+- Canonical platform transformation policy: `docs/global-distribution-platform-native-policy.md`.
 - Mandatory search/discovery policy: `docs/global-distribution-search-discovery-policy.md`.
-- Canonical flow: `source -> platform-native transformation -> search/discovery optimization -> package -> publish/hand-off -> verification -> measurement`.
-- Track **Auto Publish** and **Assisted Manual** separately.
-- A channel is **Verified** only after an automated publish/upload succeeds and remains authoritative/re-readable where the provider permits it.
+- A publication is not complete when copy is written, a queue file is created, an API call succeeds, or only some channels are posted.
+- Full publication state machine:
+
+`SOURCE_FINAL -> TARGETS_DEFINED -> PLATFORM_TRANSFORMED -> DISCOVERY_OPTIMIZED -> MEDIA_READY -> QA_PASSED -> APPROVED_TO_PUBLISH -> DISTRIBUTED -> VERIFIED -> MEASUREMENT_STARTED -> DONE`
+
+- Track **Auto Publish** and **Assisted Manual** separately inside one higher-level Publication.
 - Secrets never belong in GitHub or the Google Sheets ledger.
-- Every distribution milestone and top-level policy change must be mirrored here and in `LifeToLife_Global_Distribution_Account_Ledger`.
+- Every major distribution milestone and top-level policy change must be mirrored here and in `LifeToLife_Global_Distribution_Account_Ledger`.
 
 ## Global expansion freeze — 2026-08-15
 
@@ -25,44 +29,90 @@ Current usable network:
 - **Assisted Manual: 4** — X, TikTok, Reddit, Snapchat.
 - **Practical usable network: 12 channels.**
 
-Existing pending work may finish if already-approved by the provider:
+Existing pending work may finish if already approved by the provider:
 
 - **Pinterest** — Trial API approval pending.
 - **Hatena Blog** — account created; blog-opening manual anti-spam review pending; adapter prepared but publishing unverified.
 
-If both pending channels become operational, the practical network can reach **14 channels without opening any additional platform project**.
+If both pending channels become operational, the practical network can reach **14 channels without opening another platform project**.
 
-Snapchat was added after the freeze as a reuse-only short-form distribution channel. It is **not** an active automation project: Spotlight posting is manual unless Snap later confirms Public Profile API allowlisting.
+Snapchat is a reuse-only short-form distribution channel and remains manual Spotlight unless Snap later confirms Public Profile API allowlisting.
 
-Deferred under the freeze: Dailymotion, OK.ru, Vimeo, Mastodon, Telegram, LINE, LinkedIn, ShareChat/Moj/Kwai and the rest of the candidate roster. China-local platforms are intentionally out of scope for this phase and should be reopened only as a separate China expansion project if real demand appears.
+Deferred under the freeze: Dailymotion, OK.ru, Vimeo, Mastodon, Telegram, LINE, LinkedIn, ShareChat/Moj/Kwai and the rest of the candidate roster. China-local platforms remain out of scope unless a separate China expansion project is justified by real demand.
+
+## End-to-end Publication Pipeline — established 2026-08-16
+
+Canonical document: `docs/global-publication-pipeline.md`.
+
+A **Publication** is now the unit of work. One Publication contains:
+
+- canonical source content,
+- target manifest,
+- platform-native text packages,
+- per-platform search/discovery optimization,
+- required derived media including short-form video/audio/captions,
+- QA state,
+- explicit publish approval,
+- Auto Publish and Assisted Manual execution,
+- provider/manual verification,
+- URLs/IDs/UTM data,
+- measurement state.
+
+### Hard gate before live queue
+
+A new full-publication job may receive `status = ready` and `approval = publish` only after:
+
+1. source is final;
+2. intended targets are declared;
+3. every intended target has a platform-native package;
+4. every intended target has passed its search/discovery optimization pass;
+5. all required media assets are real and ready, or media is explicitly not required by that target manifest;
+6. publication QA has passed.
+
+The queue is therefore the **APPROVED_TO_PUBLISH execution boundary**, not a workspace for unfinished drafts.
+
+`distribution/JOB_SCHEMA.md` now documents a higher-level `publication` gate object for all future full-publication jobs. The currently deployed trigger still mechanically checks only schema/status/approval, so the job-generation/QA layer must enforce the new gate until the trigger itself is upgraded and redeployed.
+
+### Definition of DONE
+
+A Publication is `DONE` only when every intended target is either:
+
+- actually published and verified, or
+- explicitly `not_applicable` with a reason;
+
+and:
+
+- no intended video/media target remains deferred,
+- publication URLs/IDs are recorded,
+- measurement has started in the campaign ledger.
 
 ## Platform-native + search/discovery distribution rule
 
-Canonical flow:
+Canonical distribution segment:
 
-`source content -> platform-native transformation -> search/discovery optimization -> platform-ready distribution package -> publish/hand-off -> verification/feedback`
+`source -> platform-native transformation -> search/discovery optimization -> platform-ready package`
 
-Current Assisted Manual packages / hand-offs:
+Search/discovery optimization is a mandatory stage separate from native rewriting. The agent must account for what each destination indexes, recommends, categorizes or can infer from visible/spoken content.
 
-- X: platform-ready copy with natural search terms and no more than two relevant hashtags as a house rule.
+Current Assisted Manual behavior:
+
+- X: platform-ready copy with natural search terms and a small relevant hashtag set.
 - TikTok: real vertical asset + on-screen/spoken search phrase + caption/hashtags/cover/upload package.
 - Reddit: search-oriented but self-contained community post with a substantive discussion prompt.
-- Snapchat: real vertical asset + visible/spoken topic + description/#Topics for manual Spotlight upload; no auto-publish claim.
+- Snapchat: real vertical asset + visible/spoken topic + description/#Topics for manual Spotlight upload.
 
-Search/discovery optimization is now a mandatory gate. Platform-native wording alone is not enough. The agent must also account for what the destination actually indexes, recommends, categorizes or can infer from the visible/spoken media.
+## Current automated foundation — 8 Verified adapters
 
-## Current automated foundation — 8 Verified
-
-| Channel | Public account / handle | Mode | State |
+| Channel | Public account / handle | Mode | Current implementation state |
 |---|---|---|---|
-| WordPress.com | `lifetolifeglobal.wordpress.com` | Auto Publish | **Verified adapter, but current campaign path exposes a draft-status defect** |
-| Bluesky | `@lifetolife-net.bsky.social` | Auto Publish | **Verified + Agent integrated** |
-| Blogger | LifeToLife / `lifetolife-net` | Auto Publish | **Verified + Agent integrated; labels forwarding enhancement pending** |
-| YouTube | `@lifetolife_net` | Auto Publish | **Verified + Agent integrated** |
-| Facebook | Page `Life to Life` | Auto Publish | **Verified + Agent integrated** |
-| Instagram | `@lifetolife_net` | Auto Publish | **Verified + Agent integrated** |
-| Threads | `@lifetolife_net` | Auto Publish | **Verified + Agent integrated** |
-| Tumblr | `lifetolife-net` | Auto Publish | **Verified + Agent integrated + refresh-aware OAuth2 + tag field support** |
+| WordPress.com | `lifetolifeglobal.wordpress.com` | Auto Publish | Verified adapter; current campaign path exposed a hardcoded-draft defect |
+| Bluesky | `@lifetolife-net.bsky.social` | Auto Publish | Verified + Agent integrated |
+| Blogger | LifeToLife / `lifetolife-net` | Auto Publish | Verified + Agent integrated; labels forwarding enhancement pending |
+| YouTube | `@lifetolife_net` | Auto Publish | Verified + Agent integrated |
+| Facebook | Page `Life to Life` | Auto Publish | Verified + Agent integrated |
+| Instagram | `@lifetolife_net` | Auto Publish | Verified + Agent integrated |
+| Threads | `@lifetolife_net` | Auto Publish | Verified + Agent integrated |
+| Tumblr | `lifetolife-net` | Auto Publish | Verified + Agent integrated + refresh-aware OAuth2 + dedicated tag support |
 
 ## Existing pending channels
 
@@ -70,161 +120,152 @@ Search/discovery optimization is now a mandatory gate. Platform-native wording a
 
 - Trial API approval pending.
 - Complete only if the existing application is approved.
-- Search/discovery policy is already prepared so an approved Pin should use keyword-natural title/description/topic metadata rather than generic reposting.
+- Search/discovery rules are already prepared for future Pin packages.
 
 ### Hatena Blog
 
 - Hatena account created.
 - Blog-opening request submitted for manual anti-spam review on 2026-08-15.
-- Prepared source wrapper: `workers/distribution-agent/worker-v8-hatena.js`.
+- Prepared wrapper: `workers/distribution-agent/worker-v8-hatena.js`.
 - Prepared setup script: `workers/distribution-agent/setup-hatena.sh`.
 - Credentials are not connected and publishing remains unverified.
-- If approved: connect API key -> non-posting credential verification -> one real test entry -> member-URI re-query.
-- Search/discovery policy requires Japanese-web intent adaptation rather than an English duplicate article.
+- If approved: connect API key -> non-posting credential verification -> one real entry -> member-URI re-query.
+- Future Hatena content must be adapted to Japanese search intent rather than copied from English posts.
 
 ## Snapchat status — Assisted Manual
 
 - Snapchat account / Business / Public Profile setup completed.
-- Snap Business OAuth App created in Business Manager; do not substitute a Developer Portal app for Public Profile API use.
+- Snap Business OAuth App created in Business Manager.
 - OAuth callback: `https://snapchat-api.lifetolife.net/oauth/callback`.
-- Callback Worker health check succeeded at `https://snapchat-api.lifetolife.net/health`.
-- Public Profile verification was requested separately; it is **not** the same as Public Profile API allowlisting.
+- Callback Worker health check succeeded.
+- Public Profile verification and Public Profile API allowlisting are separate.
 - Public Profile API allowlisting is **not confirmed and must not be recorded as formally submitted/approved**.
-- A Public Profile API-related inquiry email was sent and support chat attempted transfer to an account specialist, but no receipt, case number, or allowlist confirmation was received.
-- Operational decision: use manual Spotlight posting. Resume API automation only if Snap later provides an official allowlist response or confirmed support case.
-- Client Secret must never be recorded in this repository or the account ledger.
+- A related inquiry email was sent and support chat attempted transfer, but no receipt/case/allowlist confirmation was received.
+- Operational decision: manual Spotlight only until an official allowlist response arrives.
 
 ## Automatic distribution trigger — ACTIVE
-
-The automatic execution layer was deployed on 2026-08-15.
 
 Components:
 
 - Canonical wrapper: `workers/distribution-agent/worker-v8-trigger.js`.
 - Canonical config: `workers/distribution-agent/wrangler.toml`.
-- Cloudflare Cron: `*/5 * * * *` (every five minutes, UTC scheduler).
+- Cloudflare Cron: `*/5 * * * *`.
 - Queue: `distribution/queue/*.json`.
 - Job schema: `distribution/JOB_SCHEMA.md`.
 - Example: `distribution/examples/job-v1.example.json`.
 - Deployment helper: `workers/distribution-agent/deploy-trigger.sh`.
 
-Live `/health` returned the trigger routes after deployment, confirming the trigger wrapper is active:
+Trigger routes:
 
-- `trigger_run_route`: `/v1/trigger/run`
-- `trigger_status_route`: `/v1/trigger/status?job_id=...`
-- canonical code additionally reports `distribution_trigger: github-queue-cron-v1`.
+- `POST /v1/trigger/run`
+- `GET /v1/trigger/status?job_id=...`
 
-The exact new Cloudflare Version ID was not captured in the chat transcript; the previous pre-trigger Version ID was `42bd43fb-f786-4d25-82eb-8895490f0cd9` and must not be treated as the current trigger-build ID.
+Current trigger behavior:
 
-### Trigger behavior and safety
+1. checks the GitHub queue every five minutes;
+2. mechanically executes only `schema = lifetolife.distribution-job.v1`, `status = ready`, `approval = publish`;
+3. auto-targets only Facebook, Instagram, Threads, Bluesky, Blogger, WordPress.com, Tumblr and YouTube;
+4. never auto-posts X, TikTok, Reddit or Snapchat;
+5. stores per-target execution state in SQLite-backed Durable Object storage;
+6. treats successful `job_id + target` as immutable;
+7. retries failed targets up to the configured limit;
+8. processes at most ten queue JSON files per scheduled run.
 
-1. Every five minutes the scheduled handler checks the GitHub queue.
-2. Only `schema = lifetolife.distribution-job.v1`, `status = ready`, `approval = publish` jobs execute.
-3. Jobs must already contain platform-native and search/discovery-optimized packages. The trigger is an execution boundary, not a generic transformer.
-4. Automatic targets are limited to the eight Verified channels: Facebook, Instagram, Threads, Bluesky, Blogger, WordPress.com, Tumblr, YouTube.
-5. X, TikTok, Reddit and Snapchat packages may live under `assisted_manual` but are never auto-posted.
-6. Per-target execution state is stored in the existing SQLite-backed Durable Object namespace.
-7. A successful `job_id + target` is immutable: editing the queue file cannot republish it. Intentional republication requires a new `job_id`.
-8. Failed targets may retry while successful targets are skipped.
-9. Maximum ten queue JSON files per scheduled run.
-10. Queue files must contain no secrets.
+The new Publication readiness object is documented but **not yet enforced in deployed trigger code**. A trigger upgrade is required before this becomes a technical hard gate rather than an operational hard gate.
 
 ## Distribution Agent infrastructure
 
 - Worker: `lifetolife-distribution-agent`
 - Production endpoint: `https://distribution-api.lifetolife.net`
-- Current canonical source entry: `workers/distribution-agent/worker-v8-trigger.js` — **deployed / active**.
+- Current canonical source entry: `workers/distribution-agent/worker-v8-trigger.js`.
 - Base v8 source: `workers/distribution-agent/worker-v8.js`.
 - Tumblr publish layer: `workers/distribution-agent/worker-v8-tumblr-publish.js`.
 - Tumblr uint64-safe layer: `workers/distribution-agent/worker-v8-tumblr-safe-verify.js`.
 - Hatena layer: `workers/distribution-agent/worker-v8-hatena.js` — prepared, unverified.
 - Common JSON route: `POST /v1/publish`.
 - YouTube multipart route: `POST /v1/publish/youtube`.
-- Trigger run route: `POST /v1/trigger/run`.
-- Trigger state route: `GET /v1/trigger/status?job_id=...`.
 - WordPress/Tumblr/trigger state backend: SQLite-backed Durable Object `WordPressAuthState`, binding `WPCOM_AUTH_STATE`.
 
-### Verified adapter paths
+### Known adapter gaps
 
-- Facebook: Page `/feed` -> re-query.
-- Instagram: `/media` -> container readiness -> `/media_publish` -> re-query.
-- Threads: `/threads` -> `/threads_publish` -> re-query.
-- Blogger: OAuth refresh -> `posts.insert` -> `posts.get`; **current adapter does not yet forward Blogger labels**.
-- Bluesky: App Password + stable DID -> `createSession` -> `createRecord` -> `getRecord`.
-- WordPress.com: OAuth 2.1 + Durable Object auth state -> MCP initialize -> `posts.create` -> `posts.get`; **current implementation hardcodes `status: draft` and therefore requires an upgrade for public campaign search exposure**.
-- YouTube: Google OAuth refresh -> resumable `videos.insert` -> binary upload -> `videos.list` processing verification.
-- Tumblr: OAuth2 `offline_access` -> refresh-aware NPF create -> authenticated re-query with uint64-safe verification; dedicated `tumblr_tags` supported.
+1. **WordPress:** current implementation hardcodes `status: draft`. Public status and SEO/taxonomy forwarding require an adapter upgrade.
+2. **Blogger:** current adapter publishes title/body but does not yet forward Blogger labels.
+3. **Tumblr:** dedicated tag forwarding is already implemented.
+4. **Instagram/YouTube/TikTok/Snapchat:** require real media. Search optimization must include the actual visible/spoken content, not metadata alone.
 
 ## Search/discovery optimization pass — 2026-08-16
 
-A full platform policy pass was completed against the current usable network.
-
 Canonical policy: `docs/global-distribution-search-discovery-policy.md`.
 
-The initial NUNCHI intent cluster is deliberately small and natural:
+Initial NUNCHI intent cluster:
 
 - primary: `Korean social cues`, `Korean culture`, `learn Korean`;
 - contextual: `living in Korea`, `Korean communication`, `Korean etiquette`;
 - concept/product: `nunchi`, `nunchi meaning`, `눈치`;
 - scenario phrase where relevant: `괜찮아요`.
 
-These are positioning/search-intent hypotheses, not claimed keyword-volume rankings.
+These are positioning/search-intent hypotheses, not claimed keyword-volume rankings. Actual performance data should change the rules over time.
 
-The first job was revised **without changing its job ID**, preserving deduplication. Any already-completed target remains immutable and cannot be duplicated by the revision.
+## Legacy first NUNCHI intro campaign — HOLD
 
-Implemented in the revised package:
-
-- Facebook/Threads: natural search-topic wording near the opening, self-contained value before link.
-- Bluesky: exact topic wording plus two precise searchable hashtags.
-- Blogger: search-oriented title/body and planned labels.
-- WordPress: planned public status, descriptive slug, excerpt/SEO title/SEO description and five focused tags.
-- Tumblr: search-oriented body plus seven dedicated, front-loaded tags and source URL.
-- X: natural keyword wording plus two relevant hashtags.
-- Reddit: searchable title, substantial body and a specific discussion prompt.
-- TikTok/Snapchat: search-ready vertical-media packages prepared, awaiting a real asset.
-- Instagram/YouTube: search-ready media/title/caption/video-topic plans stored as deferred packages; no placeholder asset is used.
-
-## First real marketing distribution — NUNCHI intro — 2026-08-16
+The earlier campaign predates the complete Publication Pipeline.
 
 - Job ID: `nunchi-intro-2026-08-16-01`
 - Queue file: `distribution/queue/2026-08-16-nunchi-intro-01.json`
-- Source: `https://nunchi.lifetolife.net/`
-- Campaign: `nunchi_intro_20260816`
-- Objective: introduce NUNCHI as a choice-based Korean social-context game and establish the first measurable distribution baseline.
-- Auto Publish packages: Facebook, Threads, Bluesky, Blogger, WordPress.com, Tumblr.
-- Assisted Manual packages now prepared: X, Reddit, TikTok and Snapchat; the latter two await real vertical media.
-- Instagram and YouTube remain deferred until a real original media asset exists.
-- Every destination package now has a destination-specific search/discovery plan and UTM where outbound linking is appropriate.
+- Original source positioning: generic NUNCHI intro.
+- Some targets may already have completed execution under the immutable `job_id + target` history.
+- WordPress created Post ID `10` as a draft at `2026-08-16T19:20:54` site time, confirming the hardcoded-draft defect.
 
-### WordPress execution finding
+On 2026-08-16 the queue file was changed from:
 
-The queue did execute the WordPress target. A direct WordPress.com read found:
+- `status: ready`
+- `approval: publish`
 
-- Post ID: `10`
-- title: `NUNCHI: The Meaning Between the Words`
-- status: **draft**
-- site timestamp: `2026-08-16T19:20:54`
+to:
 
-This confirms the current hardcoded-draft adapter behavior affected the real campaign. The post is not being counted as a publicly searchable publication. It must be updated with the optimized title/body/slug/excerpt/taxonomy and explicitly published before WordPress search optimization can be considered complete.
+- `status: hold`
+- `approval: hold`
+- `legacy_partial: true`
 
-No duplicate WordPress post should be created for this campaign; update Post ID 10 instead.
+Reason: **Building NUNCHI #1 is now the canonical source for the first full end-to-end Publication.** Unfinished targets from the legacy package must not keep retrying or create additional pre-pipeline posts. Completed target history remains preserved and must not be duplicated.
 
-### Technical gaps found by the optimization pass
+The WordPress draft ID 10 is treated as a legacy partial artifact, not as a completed public publication.
 
-1. **WordPress:** existing adapter hardcodes draft. Public status and SEO/taxonomy forwarding must be added to the production adapter; current Post ID 10 should be updated rather than duplicated.
-2. **Blogger:** API supports labels, but the current LifeToLife adapter does not forward them. Title/body optimization remains useful, but full technical label optimization is not yet claimable.
-3. **Tumblr:** dedicated tag forwarding is already implemented and can be used immediately.
-4. **Media channels:** Instagram/YouTube/TikTok/Snapchat need a real media asset. Search optimization must include visible/spoken content, not metadata alone.
+## First canonical full Publication source
+
+The first proper full-pipeline source is:
+
+**`Building NUNCHI #1: Can You Turn “Nunchi” Into a Game?`**
+
+This source must now move through the Publication state machine from the beginning:
+
+1. preserve/finalize the readable article as the source of truth;
+2. define the intended 12-channel target manifest;
+3. create platform-native derivatives;
+4. run per-platform search/discovery optimization;
+5. derive the real short-form vertical video package including narration/audio/captions;
+6. create YouTube Shorts / Instagram Reels / TikTok / Snapchat variants as needed;
+7. run QA;
+8. only then create the new `ready + publish` queue job;
+9. distribute;
+10. verify every intended target;
+11. register URLs/IDs and start measurement;
+12. mark Publication `DONE` only after those conditions are satisfied.
 
 ## Measurement tracking
 
-Google Sheets `LifeToLife_Global_Distribution_Account_Ledger` now contains a `Campaigns` tab. The first campaign row is updated to record the search/discovery pass, WordPress draft finding, UTM measurement plan and adapter gaps.
+Google Sheets `LifeToLife_Global_Distribution_Account_Ledger` contains a `Campaigns` tab for execution and performance tracking.
 
-The `Rules` tab has also been synchronized to:
+The `Rules` tab has been synchronized with:
 
-- reflect 12 usable channels and Snapchat Assisted Manual status;
-- require a search/recommendation optimization pass after platform-native transformation;
-- require technical verification that metadata was actually forwarded and the created object is public/indexable before claiming search optimization complete.
+- the 12-channel operating network,
+- mandatory platform-native transformation,
+- mandatory search/discovery optimization,
+- the full Publication state machine,
+- the definition of `DONE`,
+- the queue-entry gate.
+
+The legacy first campaign row is now recorded as **HOLD — legacy partial campaign; no further retries**.
 
 ## Current totals
 
@@ -232,24 +273,28 @@ As of 2026-08-16 KST:
 
 - **Usable distribution channels: 12** = 8 Auto Publish Verified + 4 Assisted Manual.
 - **Existing pending reviews: 2** — Pinterest API Trial approval, Hatena Blog opening review.
-- **Potential near-term total without additional platform expansion: 14**.
-- **Snapchat API status: unresolved / no confirmed allowlist submission; manual Spotlight only.**
+- **Potential near-term total without platform expansion: 14**.
 - **New-platform expansion: frozen.**
-- **China-local expansion: intentionally out of scope.**
 - **Automatic GitHub queue -> Cloudflare Cron trigger: ACTIVE.**
+- **Platform-native policy: established.**
 - **All-channel search/discovery policy: established.**
-- **First campaign queue revision: search/discovery optimized without changing job ID.**
-- **WordPress first-campaign publication: NOT complete — Post ID 10 is draft.**
-- **Blogger label forwarding: adapter enhancement pending.**
+- **End-to-end Publication Pipeline: established.**
+- **Legacy first NUNCHI intro job: HOLD.**
+- **First canonical full Publication source: Building NUNCHI #1.**
+- **WordPress public-status/SEO adapter enhancement: pending.**
+- **Blogger label forwarding enhancement: pending.**
 
 ## Next work
 
-1. Update WordPress Post ID 10 with the optimized title/body/slug/excerpt/tags and explicitly publish it; do not create a duplicate.
-2. Enhance and deploy WordPress adapter support for explicit approved public status and search metadata, then verify a future campaign end-to-end.
-3. Enhance and deploy Blogger label forwarding, then verify labels on a real future post.
-4. Audit provider/Durable Object results for the other first-job targets and record canonical links/IDs without republishing completed targets.
-5. Create one real original vertical NUNCHI asset and distribute it through Instagram, YouTube, TikTok and Snapchat using the prepared search/discovery packages.
-6. Publish the prepared X and Reddit Assisted Manual packages when appropriate and record their URLs.
-7. Begin measurement by destination-specific UTM traffic, search/referral reach, engagement and downstream play behavior; revise rules from actual data.
-8. Complete Pinterest or Hatena only if their existing pending reviews approve.
-9. Keep Snapchat manual; only resume Public Profile API integration if Snap later provides a confirmed allowlist/support response.
+1. Build the first canonical Publication package from `Building NUNCHI #1`.
+2. Declare its intended target manifest across the usable network.
+3. Produce all platform-native text derivatives.
+4. Run the destination-specific search/discovery optimization pass on every intended target.
+5. Produce the real short-form vertical media master with narration/audio/captions and derive Shorts/Reels/TikTok/Spotlight variants.
+6. Run full publication QA.
+7. Upgrade/deploy the WordPress public-status/SEO path and Blogger labels path before claiming those optimizations technically complete.
+8. Add technical enforcement of the Publication readiness gate to the trigger so incomplete jobs cannot execute even if accidentally marked `ready + publish`.
+9. After explicit approval, create the new queue job and distribute.
+10. Verify every Auto Publish and Assisted Manual target, record URLs/IDs, start measurement and only then mark the Publication `DONE`.
+11. Complete Pinterest or Hatena only if their existing pending reviews approve.
+12. Keep Snapchat manual unless a confirmed official API allowlist response arrives.
