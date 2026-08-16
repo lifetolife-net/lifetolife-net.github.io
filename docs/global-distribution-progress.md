@@ -151,6 +151,24 @@ Immediately after trigger deployment, the queue contained only `distribution/que
 - YouTube: Google OAuth refresh -> resumable `videos.insert` -> binary upload -> `videos.list` processing verification
 - Tumblr: OAuth2 `offline_access` -> refresh-aware NPF create -> authenticated re-query with uint64-safe verification
 
+## First real marketing distribution — NUNCHI intro — 2026-08-16
+
+The first real, non-test marketing job has been committed to the live GitHub queue.
+
+- Job ID: `nunchi-intro-2026-08-16-01`
+- Queue file: `distribution/queue/2026-08-16-nunchi-intro-01.json`
+- Source: `https://nunchi.lifetolife.net/`
+- Campaign: `nunchi_intro_20260816`
+- Objective: introduce NUNCHI as a choice-based Korean social-context game and establish the first measurable distribution baseline.
+- Auto Publish packages in this first run: Facebook, Threads, Bluesky, Blogger, WordPress.com, Tumblr.
+- Assisted Manual packages prepared: X and Reddit.
+- Instagram and YouTube are intentionally excluded from this first text-led run because their verified adapters require real public media assets; they will join the first media-led campaign rather than use placeholder media.
+- TikTok and Snapchat are likewise deferred to the media-led campaign because their manual hand-off is inherently vertical-video oriented.
+- Every included destination uses platform-native copy and a destination-specific UTM source.
+- Execution state at commit time: **QUEUED — `ready + publish`**. Do not record successful publication until provider/Durable Object verification confirms each target.
+
+Measurement tracking begins in the Google Sheets ledger via the new `Campaigns` tab. The first row mirrors this job and will be updated with execution and performance data.
+
 ## Current totals
 
 As of 2026-08-16 KST:
@@ -162,12 +180,14 @@ As of 2026-08-16 KST:
 - **New-platform expansion: frozen.**
 - **China-local expansion: intentionally out of scope.**
 - **Automatic GitHub queue -> Cloudflare Cron trigger: ACTIVE.**
+- **First real campaign:** `nunchi-intro-2026-08-16-01` queued with six Auto Publish targets and two Assisted Manual packages.
 
 ## Next work
 
-1. Use the first real approved content as the first end-to-end queue execution; do not create meaningless public test posts merely for trigger testing.
-2. For every approved item, prepare distinct platform-native packages and commit a `ready + publish` queue job.
-3. Verify the first real job's per-target Durable Object status and deduplication.
-4. Complete Pinterest or Hatena only if their existing pending reviews approve.
-5. Keep Snapchat manual; only resume Public Profile API integration if Snap later provides a confirmed allowlist/support response.
-6. Shift effort from platform-count expansion to actual distribution, measurement, discovery, conversion and monetization.
+1. Verify `nunchi-intro-2026-08-16-01` per-target Durable Object/provider results and record canonical links/IDs.
+2. Record the same execution result in `LifeToLife_Global_Distribution_Account_Ledger` -> `Campaigns`.
+3. Publish the prepared X and Reddit Assisted Manual packages when appropriate and record their URLs.
+4. Create one real vertical media asset for the same NUNCHI positioning, then distribute it through Instagram, YouTube, TikTok and Snapchat with platform-native variants.
+5. Begin measurement by destination-specific UTM traffic, reach/discovery, engagement and downstream play behavior; revise transformation rules from actual data rather than preserving formats by habit.
+6. Complete Pinterest or Hatena only if their existing pending reviews approve.
+7. Keep Snapchat manual; only resume Public Profile API integration if Snap later provides a confirmed allowlist/support response.
