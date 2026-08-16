@@ -1,0 +1,8 @@
+name = "lifetolife-snapchat-callbacks"
+main = "worker.js"
+compatibility_date = "2026-08-14"
+workers_dev = true
+
+[[routes]]
+pattern = "snapchat-api.lifetolife.net"
+custom_domain = true
