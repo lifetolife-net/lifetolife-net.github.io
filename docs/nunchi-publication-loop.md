@@ -53,10 +53,12 @@ Every cycle must preserve these rules:
 2. Every target receives a platform-native transformation.
 3. Every target receives a platform-specific search/discovery optimization pass.
 4. Media-required channels must receive real media, including narration/audio/captions when appropriate; no placeholder asset is allowed merely to complete channel count.
-5. `ready + publish` is allowed only after content, discovery optimization, media, and QA are complete.
-6. Distribution success is not completion; every target must be verified.
-7. Measurement must begin before the cycle is `DONE`.
-8. Actual performance should feed the next Publication Cycle so the loop improves over time.
+5. Prototype-only media is never publishable media. Voice-selection tests, free-plan TTS samples, draft music/SFX, or other assets without publication-appropriate usage rights may be used internally but must be replaced before `MEDIA_READY`.
+6. If ElevenLabs is used for NUNCHI, Free-plan output may be used for internal voice selection/prototyping only. Final public/commercial narration or dialogue must be regenerated under a plan/license permitting commercial use before final video render.
+7. `ready + publish` is allowed only after content, discovery optimization, production-licensed media, and QA are complete.
+8. Distribution success is not completion; every target must be verified.
+9. Measurement must begin before the cycle is `DONE`.
+10. Actual performance should feed the next Publication Cycle so the loop improves over time.
 
 ## Repetition and scale
 
