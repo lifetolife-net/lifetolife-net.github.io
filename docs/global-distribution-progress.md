@@ -1,6 +1,6 @@
 # LifeToLife Global Distribution Progress
 
-Last updated: 2026-08-15 (KST)
+Last updated: 2026-08-16 (KST)
 
 This document is the canonical progress record for LifeToLife's global distribution and publishing network.
 
@@ -20,15 +20,17 @@ LifeToLife has reached a sufficient one-person global distribution baseline. **D
 Current usable network:
 
 - **Auto Publish Verified: 8** — WordPress.com, Bluesky, Blogger, YouTube, Facebook, Instagram, Threads, Tumblr.
-- **Assisted Manual: 3** — X, TikTok, Reddit.
-- **Practical usable network: 11 channels.**
+- **Assisted Manual: 4** — X, TikTok, Reddit, Snapchat.
+- **Practical usable network: 12 channels.**
 
 Existing pending work may finish if already-approved by the provider:
 
 - **Pinterest** — Trial API approval pending.
 - **Hatena Blog** — account created; blog-opening manual anti-spam review pending; adapter prepared but publishing unverified.
 
-If both pending channels become operational, the practical network can reach **13 channels without opening any new platform project**.
+If both pending channels become operational, the practical network can reach **14 channels without opening any additional platform project**.
+
+Snapchat was added after the freeze as a reuse-only short-form distribution channel. It is **not** an active automation project: Spotlight posting is manual unless Snap later confirms Public Profile API allowlisting.
 
 Deferred under the freeze: Dailymotion, OK.ru, Vimeo, Mastodon, Telegram, LINE, LinkedIn, ShareChat/Moj/Kwai and the rest of the candidate roster. China-local platforms are intentionally out of scope for this phase and should be reopened only as a separate China expansion project if real demand appears.
 
@@ -38,11 +40,12 @@ Canonical flow:
 
 `source content -> platform-native transformation -> platform-ready distribution package -> publish/hand-off -> verification/feedback`
 
-Current Assisted Manual packages:
+Current Assisted Manual packages / hand-offs:
 
 - X: `x_ready_draft`
 - TikTok: platform-ready asset/caption/hashtag/cover/upload package
 - Reddit: `reddit_ready_post` for the owned subreddit
+- Snapchat: reuse the approved vertical short-form asset for manual Spotlight upload; no auto-publish claim
 
 ## Current automated foundation — 8 Verified
 
@@ -73,6 +76,18 @@ Current Assisted Manual packages:
 - Credentials are not connected and publishing remains unverified.
 - If approved: connect API key -> non-posting credential verification -> one real test entry -> member-URI re-query.
 
+## Snapchat status — Assisted Manual
+
+- Snapchat account / Business / Public Profile setup completed.
+- Snap Business OAuth App created in Business Manager; do not substitute a Developer Portal app for Public Profile API use.
+- OAuth callback: `https://snapchat-api.lifetolife.net/oauth/callback`.
+- Callback Worker health check succeeded at `https://snapchat-api.lifetolife.net/health`.
+- Public Profile verification was requested separately; it is **not** the same as Public Profile API allowlisting.
+- Public Profile API allowlisting is **not confirmed and must not be recorded as formally submitted/approved**.
+- A Public Profile API-related inquiry email was sent and support chat attempted transfer to an account specialist, but no receipt, case number, or allowlist confirmation was received.
+- Operational decision: use manual Spotlight posting. Resume API automation only if Snap later provides an official allowlist response or confirmed support case.
+- Client Secret must never be recorded in this repository or the account ledger.
+
 ## Automatic distribution trigger — ACTIVE
 
 The automatic execution layer was deployed on 2026-08-15.
@@ -101,7 +116,7 @@ The exact new Cloudflare Version ID was not captured in the chat transcript; the
 2. Only `schema = lifetolife.distribution-job.v1`, `status = ready`, `approval = publish` jobs execute.
 3. Jobs must already contain platform-native packages. The trigger is an execution boundary, not a generic cross-posting transformer.
 4. Automatic targets are limited to the eight Verified channels: Facebook, Instagram, Threads, Bluesky, Blogger, WordPress.com, Tumblr, YouTube.
-5. X, TikTok and Reddit packages may live under `assisted_manual` but are never auto-posted.
+5. X, TikTok and Reddit packages may live under `assisted_manual` but are never auto-posted; Snapchat is currently a manual Spotlight hand-off only.
 6. Per-target execution state is stored in the existing SQLite-backed Durable Object namespace.
 7. A successful `job_id + target` is immutable: editing the queue file cannot republish it. Intentional republication requires a new `job_id`.
 8. Failed targets may retry while successful targets are skipped.
@@ -138,11 +153,12 @@ Immediately after trigger deployment, the queue contained only `distribution/que
 
 ## Current totals
 
-As of 2026-08-15 KST:
+As of 2026-08-16 KST:
 
-- **Usable distribution channels: 11** = 8 Auto Publish Verified + 3 Assisted Manual.
+- **Usable distribution channels: 12** = 8 Auto Publish Verified + 4 Assisted Manual.
 - **Existing pending reviews: 2** — Pinterest API Trial approval, Hatena Blog opening review.
-- **Potential near-term total without new expansion: 13**.
+- **Potential near-term total without additional platform expansion: 14**.
+- **Snapchat API status: unresolved / no confirmed allowlist submission; manual Spotlight only.**
 - **New-platform expansion: frozen.**
 - **China-local expansion: intentionally out of scope.**
 - **Automatic GitHub queue -> Cloudflare Cron trigger: ACTIVE.**
@@ -153,4 +169,5 @@ As of 2026-08-15 KST:
 2. For every approved item, prepare distinct platform-native packages and commit a `ready + publish` queue job.
 3. Verify the first real job's per-target Durable Object status and deduplication.
 4. Complete Pinterest or Hatena only if their existing pending reviews approve.
-5. Shift effort from platform-count expansion to actual distribution, measurement, discovery, conversion and monetization.
+5. Keep Snapchat manual; only resume Public Profile API integration if Snap later provides a confirmed allowlist/support response.
+6. Shift effort from platform-count expansion to actual distribution, measurement, discovery, conversion and monetization.
