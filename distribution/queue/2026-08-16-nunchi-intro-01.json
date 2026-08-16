@@ -1,0 +1,62 @@
+{
+  "schema": "lifetolife.distribution-job.v1",
+  "job_id": "nunchi-intro-2026-08-16-01",
+  "status": "ready",
+  "approval": "publish",
+  "source": {
+    "title": "NUNCHI — Can you read the room in Korea?",
+    "canonical_url": "https://nunchi.lifetolife.net/",
+    "campaign": "nunchi_intro_20260816",
+    "objective": "Introduce NUNCHI as a choice-based Korean social-context game and establish a measurable first real distribution baseline."
+  },
+  "auto_publish": {
+    "facebook": {
+      "type": "json",
+      "body": {
+        "text": "Sometimes the hardest part of Korean isn’t vocabulary. It’s figuring out what a pause, a softened ‘괜찮아요,’ or a change in tone means in that situation.\n\nNUNCHI is a choice-based game about reading Korean social context — not memorizing etiquette rules. Try a situation and see what you notice.\n\nhttps://nunchi.lifetolife.net/?utm_source=facebook&utm_medium=social&utm_campaign=nunchi_intro_20260816"
+      }
+    },
+    "threads": {
+      "type": "json",
+      "body": {
+        "text": "Learning Korean can tell you what the words mean. Living in Korea often asks a second question: what does this mean here?\n\nNUNCHI is a choice-based social-context game built around that gap.\n\nhttps://nunchi.lifetolife.net/?utm_source=threads&utm_medium=social&utm_campaign=nunchi_intro_20260816"
+      }
+    },
+    "bluesky": {
+      "type": "json",
+      "body": {
+        "text": "Knowing the Korean words isn’t always enough. What does ‘괜찮아요’ mean in this situation? NUNCHI is a choice-based game about reading social context in Korea. Try it: https://nunchi.lifetolife.net/?utm_source=bluesky&utm_medium=social&utm_campaign=nunchi_intro_20260816"
+      }
+    },
+    "blogger": {
+      "type": "json",
+      "body": {
+        "title": "Why Korean Can Feel Hard Even When You Know the Words",
+        "text": "You can understand every word in a Korean sentence and still be unsure what just happened.\n\nA short ‘괜찮아요’ can be a real yes, a polite no, reassurance, or a way to close the subject. A pause can matter. Who speaks first can matter. The relationship between two people can change the meaning of an otherwise simple line.\n\nThat layer is difficult to learn from vocabulary lists because the problem is not only language. It is context.\n\nNUNCHI is a choice-based game built around those moments. Instead of giving you a rule to memorize, it places you in a social situation and asks you to decide what is happening or what response fits best. The goal is not to turn Korean life into a set of fixed formulas. It is to practice noticing the signals that people actually use.\n\nIf you are learning Korean, living in Korea, or simply curious about how social meaning travels between words, you can try NUNCHI here:\n\nhttps://nunchi.lifetolife.net/?utm_source=blogger&utm_medium=referral&utm_campaign=nunchi_intro_20260816"
+      }
+    },
+    "wordpress": {
+      "type": "json",
+      "body": {
+        "title": "NUNCHI: The Meaning Between the Words",
+        "text": "Language study usually begins with words and grammar. Real conversations add another layer: timing, relationship, tone, what was left unsaid, and what everyone in the room already seems to understand.\n\nThat is the space NUNCHI explores.\n\nNUNCHI is a choice-based game about Korean social context. It does not ask you to memorize a list of etiquette rules. It gives you situations and asks you to notice what changes the meaning: who is speaking, what happened just before, how direct the wording is, and what response would fit the moment.\n\nThe point is not to produce one mechanical formula for Korean behavior. Social life is too varied for that. The point is to become more sensitive to context — to see why the same words can land differently in different situations.\n\nTry NUNCHI:\nhttps://nunchi.lifetolife.net/?utm_source=wordpress&utm_medium=referral&utm_campaign=nunchi_intro_20260816"
+      }
+    },
+    "tumblr": {
+      "type": "json",
+      "body": {
+        "title": "When you know the Korean words but still don’t know what just happened",
+        "text": "There’s a moment language textbooks rarely prepare you for: you understood the sentence, but you still aren’t sure what it meant in the room.\n\nWas that ‘괜찮아요’ reassurance? A refusal? A polite way to stop asking?\n\nNUNCHI is a choice-based game about those gaps between literal language and social context in Korea. You look at the situation, make a choice, and practice noticing the cues around the words instead of memorizing one universal rule.\n\nTry it here: https://nunchi.lifetolife.net/?utm_source=tumblr&utm_medium=social&utm_campaign=nunchi_intro_20260816"
+      }
+    }
+  },
+  "assisted_manual": {
+    "x": {
+      "text": "Knowing the Korean words isn’t always enough. What does ‘괜찮아요’ mean in this situation? NUNCHI is a choice-based game for reading social context in Korea. https://nunchi.lifetolife.net/?utm_source=x&utm_medium=social&utm_campaign=nunchi_intro_20260816"
+    },
+    "reddit": {
+      "title": "A Korean social-context game: what do the words mean in this situation?",
+      "body": "Knowing the vocabulary is not always the same as understanding a Korean interaction. The same short phrase can feel different depending on who says it, what happened just before, the tone, or what is being left unsaid.\n\nLifeToLife is building NUNCHI as a choice-based game around that problem. Instead of presenting a fixed etiquette rule, each situation asks you to read the context and choose what interpretation or response fits best. The aim is to practice noticing social signals without pretending that every Korean interaction follows one formula.\n\nIf that sounds useful, you can try it here: https://nunchi.lifetolife.net/?utm_source=reddit&utm_medium=community&utm_campaign=nunchi_intro_20260816\n\nFeedback on which situations feel genuinely Korean — and which feel too generic — is especially useful."
+    }
+  }
+}
