@@ -113,6 +113,10 @@ For short-form NUNCHI distribution, the default derived asset is a 9:16 vertical
 
 Create platform variants when the first seconds, cover, caption, CTA, duration, disclosure, or metadata should differ.
 
+**Prototype audio is not production audio.** Free-plan or otherwise non-commercially licensed TTS may be used to select voices, test pacing, and review editorial direction, but it must never be embedded in a media asset that is about to enter public/commercial distribution unless its license explicitly allows that use. Before P4 can be marked `MEDIA_READY` for a commercial/publication cycle, every narration, dialogue, music, sound effect, image, and video component must have publication-appropriate usage rights.
+
+For ElevenLabs specifically in the current NUNCHI workflow: Free-plan output is for internal voice selection/prototyping only. If ElevenLabs is used for a public NUNCHI release, the final narration/dialogue audio must be regenerated under a plan/license that permits commercial use before the final MP4 is rendered.
+
 Text-only publications may mark this stage `not_required`, but only when no intended target requires media.
 
 ### P5 — QA_PASSED
@@ -131,6 +135,7 @@ Minimum checks:
 - video format/aspect ratio/audio/captions are valid where required,
 - visible/spoken video topic matches metadata,
 - disclosure requirements are satisfied where applicable,
+- every media component has publication-appropriate usage rights and no prototype-only audio remains,
 - public/private/draft state requested for each target is intentional,
 - no completed `publication_id/job_id + target` will be accidentally republished.
 
