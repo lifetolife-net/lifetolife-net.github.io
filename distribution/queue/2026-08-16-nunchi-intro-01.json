@@ -1,8 +1,10 @@
 {
   "schema": "lifetolife.distribution-job.v1",
   "job_id": "nunchi-intro-2026-08-16-01",
-  "status": "ready",
-  "approval": "publish",
+  "status": "hold",
+  "approval": "hold",
+  "legacy_partial": true,
+  "hold_reason": "Predates the canonical end-to-end Publication Pipeline. Building NUNCHI #1 is now the canonical source for the first full publication. Preserve completed target history but do not execute or retry unfinished targets from this legacy package.",
   "source": {
     "title": "NUNCHI — Korean social cues beyond the words",
     "canonical_url": "https://nunchi.lifetolife.net/",
@@ -11,7 +13,7 @@
     "search_discovery_pass": "completed-2026-08-16",
     "primary_intent": "Korean social cues",
     "secondary_intents": ["Korean culture", "learn Korean", "living in Korea", "nunchi meaning"],
-    "note": "Intent terms are positioning hypotheses, not claimed search-volume rankings. Completed job_id+target executions remain immutable and are not republished by this revision."
+    "note": "Legacy partial campaign. Completed job_id+target executions remain immutable. No further execution is allowed from this file."
   },
   "auto_publish": {
     "facebook": {
