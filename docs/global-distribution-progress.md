@@ -8,6 +8,8 @@ This document is the canonical progress record for LifeToLife's global distribut
 
 - **Never blind-cross-post the same source text across platforms.** Every distribution run must transform source content into a platform-native distribution package before publish or hand-off.
 - Canonical transformation policy: `docs/global-distribution-platform-native-policy.md`.
+- Mandatory search/discovery policy: `docs/global-distribution-search-discovery-policy.md`.
+- Canonical flow: `source -> platform-native transformation -> search/discovery optimization -> package -> publish/hand-off -> verification -> measurement`.
 - Track **Auto Publish** and **Assisted Manual** separately.
 - A channel is **Verified** only after an automated publish/upload succeeds and remains authoritative/re-readable where the provider permits it.
 - Secrets never belong in GitHub or the Google Sheets ledger.
@@ -34,31 +36,33 @@ Snapchat was added after the freeze as a reuse-only short-form distribution chan
 
 Deferred under the freeze: Dailymotion, OK.ru, Vimeo, Mastodon, Telegram, LINE, LinkedIn, ShareChat/Moj/Kwai and the rest of the candidate roster. China-local platforms are intentionally out of scope for this phase and should be reopened only as a separate China expansion project if real demand appears.
 
-## Platform-native distribution rule
+## Platform-native + search/discovery distribution rule
 
 Canonical flow:
 
-`source content -> platform-native transformation -> platform-ready distribution package -> publish/hand-off -> verification/feedback`
+`source content -> platform-native transformation -> search/discovery optimization -> platform-ready distribution package -> publish/hand-off -> verification/feedback`
 
 Current Assisted Manual packages / hand-offs:
 
-- X: `x_ready_draft`
-- TikTok: platform-ready asset/caption/hashtag/cover/upload package
-- Reddit: `reddit_ready_post` for the owned subreddit
-- Snapchat: reuse the approved vertical short-form asset for manual Spotlight upload; no auto-publish claim
+- X: platform-ready copy with natural search terms and no more than two relevant hashtags as a house rule.
+- TikTok: real vertical asset + on-screen/spoken search phrase + caption/hashtags/cover/upload package.
+- Reddit: search-oriented but self-contained community post with a substantive discussion prompt.
+- Snapchat: real vertical asset + visible/spoken topic + description/#Topics for manual Spotlight upload; no auto-publish claim.
+
+Search/discovery optimization is now a mandatory gate. Platform-native wording alone is not enough. The agent must also account for what the destination actually indexes, recommends, categorizes or can infer from the visible/spoken media.
 
 ## Current automated foundation — 8 Verified
 
 | Channel | Public account / handle | Mode | State |
 |---|---|---|---|
-| WordPress.com | `lifetolifeglobal.wordpress.com` | Auto Publish | **Verified + Agent integrated + Durable auth state** |
+| WordPress.com | `lifetolifeglobal.wordpress.com` | Auto Publish | **Verified adapter, but current campaign path exposes a draft-status defect** |
 | Bluesky | `@lifetolife-net.bsky.social` | Auto Publish | **Verified + Agent integrated** |
-| Blogger | LifeToLife / `lifetolife-net` | Auto Publish | **Verified + Agent integrated** |
+| Blogger | LifeToLife / `lifetolife-net` | Auto Publish | **Verified + Agent integrated; labels forwarding enhancement pending** |
 | YouTube | `@lifetolife_net` | Auto Publish | **Verified + Agent integrated** |
 | Facebook | Page `Life to Life` | Auto Publish | **Verified + Agent integrated** |
 | Instagram | `@lifetolife_net` | Auto Publish | **Verified + Agent integrated** |
 | Threads | `@lifetolife_net` | Auto Publish | **Verified + Agent integrated** |
-| Tumblr | `lifetolife-net` | Auto Publish | **Verified + Agent integrated + refresh-aware OAuth2** |
+| Tumblr | `lifetolife-net` | Auto Publish | **Verified + Agent integrated + refresh-aware OAuth2 + tag field support** |
 
 ## Existing pending channels
 
@@ -66,6 +70,7 @@ Current Assisted Manual packages / hand-offs:
 
 - Trial API approval pending.
 - Complete only if the existing application is approved.
+- Search/discovery policy is already prepared so an approved Pin should use keyword-natural title/description/topic metadata rather than generic reposting.
 
 ### Hatena Blog
 
@@ -75,6 +80,7 @@ Current Assisted Manual packages / hand-offs:
 - Prepared setup script: `workers/distribution-agent/setup-hatena.sh`.
 - Credentials are not connected and publishing remains unverified.
 - If approved: connect API key -> non-posting credential verification -> one real test entry -> member-URI re-query.
+- Search/discovery policy requires Japanese-web intent adaptation rather than an English duplicate article.
 
 ## Snapchat status — Assisted Manual
 
@@ -114,16 +120,14 @@ The exact new Cloudflare Version ID was not captured in the chat transcript; the
 
 1. Every five minutes the scheduled handler checks the GitHub queue.
 2. Only `schema = lifetolife.distribution-job.v1`, `status = ready`, `approval = publish` jobs execute.
-3. Jobs must already contain platform-native packages. The trigger is an execution boundary, not a generic cross-posting transformer.
+3. Jobs must already contain platform-native and search/discovery-optimized packages. The trigger is an execution boundary, not a generic transformer.
 4. Automatic targets are limited to the eight Verified channels: Facebook, Instagram, Threads, Bluesky, Blogger, WordPress.com, Tumblr, YouTube.
-5. X, TikTok and Reddit packages may live under `assisted_manual` but are never auto-posted; Snapchat is currently a manual Spotlight hand-off only.
+5. X, TikTok, Reddit and Snapchat packages may live under `assisted_manual` but are never auto-posted.
 6. Per-target execution state is stored in the existing SQLite-backed Durable Object namespace.
 7. A successful `job_id + target` is immutable: editing the queue file cannot republish it. Intentional republication requires a new `job_id`.
 8. Failed targets may retry while successful targets are skipped.
 9. Maximum ten queue JSON files per scheduled run.
 10. Queue files must contain no secrets.
-
-Immediately after trigger deployment, the queue contained only `distribution/queue/README.md` and **zero runnable JSON jobs**, so deployment itself created no post.
 
 ## Distribution Agent infrastructure
 
@@ -142,32 +146,85 @@ Immediately after trigger deployment, the queue contained only `distribution/que
 
 ### Verified adapter paths
 
-- Facebook: Page `/feed` -> re-query
-- Instagram: `/media` -> container readiness -> `/media_publish` -> re-query
-- Threads: `/threads` -> `/threads_publish` -> re-query
-- Blogger: OAuth refresh -> `posts.insert` -> `posts.get`
-- Bluesky: App Password + stable DID -> `createSession` -> `createRecord` -> `getRecord`
-- WordPress.com: OAuth 2.1 + Durable Object auth state -> MCP initialize -> draft `posts.create` -> `posts.get`
-- YouTube: Google OAuth refresh -> resumable `videos.insert` -> binary upload -> `videos.list` processing verification
-- Tumblr: OAuth2 `offline_access` -> refresh-aware NPF create -> authenticated re-query with uint64-safe verification
+- Facebook: Page `/feed` -> re-query.
+- Instagram: `/media` -> container readiness -> `/media_publish` -> re-query.
+- Threads: `/threads` -> `/threads_publish` -> re-query.
+- Blogger: OAuth refresh -> `posts.insert` -> `posts.get`; **current adapter does not yet forward Blogger labels**.
+- Bluesky: App Password + stable DID -> `createSession` -> `createRecord` -> `getRecord`.
+- WordPress.com: OAuth 2.1 + Durable Object auth state -> MCP initialize -> `posts.create` -> `posts.get`; **current implementation hardcodes `status: draft` and therefore requires an upgrade for public campaign search exposure**.
+- YouTube: Google OAuth refresh -> resumable `videos.insert` -> binary upload -> `videos.list` processing verification.
+- Tumblr: OAuth2 `offline_access` -> refresh-aware NPF create -> authenticated re-query with uint64-safe verification; dedicated `tumblr_tags` supported.
+
+## Search/discovery optimization pass — 2026-08-16
+
+A full platform policy pass was completed against the current usable network.
+
+Canonical policy: `docs/global-distribution-search-discovery-policy.md`.
+
+The initial NUNCHI intent cluster is deliberately small and natural:
+
+- primary: `Korean social cues`, `Korean culture`, `learn Korean`;
+- contextual: `living in Korea`, `Korean communication`, `Korean etiquette`;
+- concept/product: `nunchi`, `nunchi meaning`, `눈치`;
+- scenario phrase where relevant: `괜찮아요`.
+
+These are positioning/search-intent hypotheses, not claimed keyword-volume rankings.
+
+The first job was revised **without changing its job ID**, preserving deduplication. Any already-completed target remains immutable and cannot be duplicated by the revision.
+
+Implemented in the revised package:
+
+- Facebook/Threads: natural search-topic wording near the opening, self-contained value before link.
+- Bluesky: exact topic wording plus two precise searchable hashtags.
+- Blogger: search-oriented title/body and planned labels.
+- WordPress: planned public status, descriptive slug, excerpt/SEO title/SEO description and five focused tags.
+- Tumblr: search-oriented body plus seven dedicated, front-loaded tags and source URL.
+- X: natural keyword wording plus two relevant hashtags.
+- Reddit: searchable title, substantial body and a specific discussion prompt.
+- TikTok/Snapchat: search-ready vertical-media packages prepared, awaiting a real asset.
+- Instagram/YouTube: search-ready media/title/caption/video-topic plans stored as deferred packages; no placeholder asset is used.
 
 ## First real marketing distribution — NUNCHI intro — 2026-08-16
-
-The first real, non-test marketing job has been committed to the live GitHub queue.
 
 - Job ID: `nunchi-intro-2026-08-16-01`
 - Queue file: `distribution/queue/2026-08-16-nunchi-intro-01.json`
 - Source: `https://nunchi.lifetolife.net/`
 - Campaign: `nunchi_intro_20260816`
 - Objective: introduce NUNCHI as a choice-based Korean social-context game and establish the first measurable distribution baseline.
-- Auto Publish packages in this first run: Facebook, Threads, Bluesky, Blogger, WordPress.com, Tumblr.
-- Assisted Manual packages prepared: X and Reddit.
-- Instagram and YouTube are intentionally excluded from this first text-led run because their verified adapters require real public media assets; they will join the first media-led campaign rather than use placeholder media.
-- TikTok and Snapchat are likewise deferred to the media-led campaign because their manual hand-off is inherently vertical-video oriented.
-- Every included destination uses platform-native copy and a destination-specific UTM source.
-- Execution state at commit time: **QUEUED — `ready + publish`**. Do not record successful publication until provider/Durable Object verification confirms each target.
+- Auto Publish packages: Facebook, Threads, Bluesky, Blogger, WordPress.com, Tumblr.
+- Assisted Manual packages now prepared: X, Reddit, TikTok and Snapchat; the latter two await real vertical media.
+- Instagram and YouTube remain deferred until a real original media asset exists.
+- Every destination package now has a destination-specific search/discovery plan and UTM where outbound linking is appropriate.
 
-Measurement tracking begins in the Google Sheets ledger via the new `Campaigns` tab. The first row mirrors this job and will be updated with execution and performance data.
+### WordPress execution finding
+
+The queue did execute the WordPress target. A direct WordPress.com read found:
+
+- Post ID: `10`
+- title: `NUNCHI: The Meaning Between the Words`
+- status: **draft**
+- site timestamp: `2026-08-16T19:20:54`
+
+This confirms the current hardcoded-draft adapter behavior affected the real campaign. The post is not being counted as a publicly searchable publication. It must be updated with the optimized title/body/slug/excerpt/taxonomy and explicitly published before WordPress search optimization can be considered complete.
+
+No duplicate WordPress post should be created for this campaign; update Post ID 10 instead.
+
+### Technical gaps found by the optimization pass
+
+1. **WordPress:** existing adapter hardcodes draft. Public status and SEO/taxonomy forwarding must be added to the production adapter; current Post ID 10 should be updated rather than duplicated.
+2. **Blogger:** API supports labels, but the current LifeToLife adapter does not forward them. Title/body optimization remains useful, but full technical label optimization is not yet claimable.
+3. **Tumblr:** dedicated tag forwarding is already implemented and can be used immediately.
+4. **Media channels:** Instagram/YouTube/TikTok/Snapchat need a real media asset. Search optimization must include visible/spoken content, not metadata alone.
+
+## Measurement tracking
+
+Google Sheets `LifeToLife_Global_Distribution_Account_Ledger` now contains a `Campaigns` tab. The first campaign row is updated to record the search/discovery pass, WordPress draft finding, UTM measurement plan and adapter gaps.
+
+The `Rules` tab has also been synchronized to:
+
+- reflect 12 usable channels and Snapchat Assisted Manual status;
+- require a search/recommendation optimization pass after platform-native transformation;
+- require technical verification that metadata was actually forwarded and the created object is public/indexable before claiming search optimization complete.
 
 ## Current totals
 
@@ -180,14 +237,19 @@ As of 2026-08-16 KST:
 - **New-platform expansion: frozen.**
 - **China-local expansion: intentionally out of scope.**
 - **Automatic GitHub queue -> Cloudflare Cron trigger: ACTIVE.**
-- **First real campaign:** `nunchi-intro-2026-08-16-01` queued with six Auto Publish targets and two Assisted Manual packages.
+- **All-channel search/discovery policy: established.**
+- **First campaign queue revision: search/discovery optimized without changing job ID.**
+- **WordPress first-campaign publication: NOT complete — Post ID 10 is draft.**
+- **Blogger label forwarding: adapter enhancement pending.**
 
 ## Next work
 
-1. Verify `nunchi-intro-2026-08-16-01` per-target Durable Object/provider results and record canonical links/IDs.
-2. Record the same execution result in `LifeToLife_Global_Distribution_Account_Ledger` -> `Campaigns`.
-3. Publish the prepared X and Reddit Assisted Manual packages when appropriate and record their URLs.
-4. Create one real vertical media asset for the same NUNCHI positioning, then distribute it through Instagram, YouTube, TikTok and Snapchat with platform-native variants.
-5. Begin measurement by destination-specific UTM traffic, reach/discovery, engagement and downstream play behavior; revise transformation rules from actual data rather than preserving formats by habit.
-6. Complete Pinterest or Hatena only if their existing pending reviews approve.
-7. Keep Snapchat manual; only resume Public Profile API integration if Snap later provides a confirmed allowlist/support response.
+1. Update WordPress Post ID 10 with the optimized title/body/slug/excerpt/tags and explicitly publish it; do not create a duplicate.
+2. Enhance and deploy WordPress adapter support for explicit approved public status and search metadata, then verify a future campaign end-to-end.
+3. Enhance and deploy Blogger label forwarding, then verify labels on a real future post.
+4. Audit provider/Durable Object results for the other first-job targets and record canonical links/IDs without republishing completed targets.
+5. Create one real original vertical NUNCHI asset and distribute it through Instagram, YouTube, TikTok and Snapchat using the prepared search/discovery packages.
+6. Publish the prepared X and Reddit Assisted Manual packages when appropriate and record their URLs.
+7. Begin measurement by destination-specific UTM traffic, search/referral reach, engagement and downstream play behavior; revise rules from actual data.
+8. Complete Pinterest or Hatena only if their existing pending reviews approve.
+9. Keep Snapchat manual; only resume Public Profile API integration if Snap later provides a confirmed allowlist/support response.
