@@ -2,7 +2,9 @@
 
 Canonical trigger input schema: `lifetolife.distribution-job.v1`.
 
-The trigger polls `distribution/queue/*.json` every 5 minutes. A queue job is only executable with explicit `status: ready` and `approval: publish`.
+The trigger polls `distribution/queue/*.json` every 5 minutes. A queue job is only mechanically executable with explicit `status: ready` and `approval: publish`.
+
+The queue is the **P6 APPROVED_TO_PUBLISH execution boundary** of the canonical `docs/global-publication-pipeline.md`. It is not the place where unfinished content becomes ready by accident.
 
 ## Required envelope
 
@@ -12,18 +14,49 @@ The trigger polls `distribution/queue/*.json` every 5 minutes. A queue job is on
   "job_id": "unique-stable-id",
   "status": "ready",
   "approval": "publish",
+  "publication": {
+    "publication_id": "stable-publication-id",
+    "pipeline_state": "APPROVED_TO_PUBLISH",
+    "source_final": true,
+    "targets_defined": true,
+    "platform_transformed": true,
+    "discovery_optimized": true,
+    "media_ready": true,
+    "qa_passed": true
+  },
   "source": {},
   "auto_publish": {},
   "assisted_manual": {}
 }
 ```
 
+For all new full-publication jobs, `publication.pipeline_state` must be `APPROVED_TO_PUBLISH` and all six readiness gates above must be true before `status: ready` / `approval: publish` is assigned.
+
+**Current technical note:** the deployed trigger currently enforces `schema`, `status`, and `approval` mechanically but does not yet reject a job based on the new `publication` gate object. Until a trigger upgrade is deployed, the job-generation/QA layer must enforce the Publication gate and must not write an incomplete job as `ready + publish`.
+
 `job_id` is the permanent deduplication identity. After a target succeeds for a job ID, editing that file cannot republish the same target. Use a new `job_id` for an intentional new publication.
+
+`publication_id` is the higher-level identity for the complete content release. It can link the canonical source, text packages, media derivatives, auto-publish results, assisted-manual results, and measurement record even when more than one technical job is needed.
 
 Optional scheduling guards:
 
 - `not_before`: ISO-8601 timestamp. The job is skipped until that time.
 - `expires_at`: ISO-8601 timestamp. The job is skipped after that time.
+
+## Publication readiness gate
+
+Before a real campaign becomes `ready + publish`, it must satisfy the canonical stages through P5:
+
+1. `SOURCE_FINAL`
+2. `TARGETS_DEFINED`
+3. `PLATFORM_TRANSFORMED`
+4. `DISCOVERY_OPTIMIZED`
+5. `MEDIA_READY` or explicitly `not_required` for a text-only target manifest
+6. `QA_PASSED`
+
+Only then may it become `APPROVED_TO_PUBLISH` and enter the live queue.
+
+A publication is not `DONE` when this job succeeds. After distribution it still requires provider/manual verification and measurement registration under P8–P9 of `docs/global-publication-pipeline.md`.
 
 ## Mandatory search/discovery pass
 
@@ -143,11 +176,13 @@ For YouTube, the trigger downloads a public HTTPS video URL and forwards it to t
 
 ## Media that does not exist yet
 
-Do not add Instagram or YouTube to `auto_publish` with fake/placeholder media. A job may preserve the approved future package under an ignored top-level planning object such as `deferred_auto_publish` until a real asset exists. The trigger only executes packages inside `auto_publish`.
+Do not add Instagram or YouTube to `auto_publish` with fake/placeholder media. A job may preserve an unfinished future package under a planning object such as `deferred_auto_publish`, but such a Publication is still in production and must not be labeled full-release `DONE`.
+
+The trigger only executes packages inside `auto_publish`.
 
 ## Assisted Manual packages
 
-X, TikTok, Reddit and Snapchat remain Assisted Manual. Their complete platform-native/search-ready packages may live in the same job but are never auto-posted by the trigger.
+X, TikTok, Reddit and Snapchat remain Assisted Manual. Their complete platform-native/search-ready packages may live in the same Publication package but are never auto-posted by the trigger.
 
 ```json
 "assisted_manual": {
@@ -199,4 +234,4 @@ As of 2026-08-16:
 
 ## Platform-native rule
 
-The queue is an execution boundary, not a transformation engine. Each package must already conform to both canonical distribution policies. Do not submit one generic source body to all channels.
+The queue is an execution boundary, not a transformation engine. Each package must already conform to the canonical Publication Pipeline and both distribution policies. Do not submit one generic source body to all channels.
