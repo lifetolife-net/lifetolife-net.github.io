@@ -4,13 +4,17 @@ Canonical policy date: 2026-08-16 KST
 
 This is a **top-level operating rule** for LifeToLife global distribution. It applies to every current and future distribution channel, whether the final publish action is automated or manual.
 
+The end-to-end definition of `publish / 발행` is canonical in `docs/global-publication-pipeline.md`. Platform transformation and search optimization are mandatory stages inside that larger Publication Pipeline.
+
 ## 1. No blind cross-posting
 
 LifeToLife must **not** copy one source post unchanged across multiple platforms.
 
-The canonical pipeline is:
+The canonical distribution segment is:
 
 `source content -> platform-native transformation -> search/discovery optimization -> platform-ready distribution package -> publish/hand-off -> verification/feedback`
+
+The complete Publication Pipeline additionally includes target declaration, required media production, QA, explicit approval, distribution verification and measurement.
 
 The Distribution Agent is therefore not merely a cross-posting bot. Its responsibility is to transform a source into a package that can perform effectively on each destination platform.
 
@@ -103,10 +107,14 @@ Evaluate distribution by a combination of:
 
 As performance data accumulates, platform transformation and search/discovery rules should be revised. A format that performs poorly should not be preserved merely for consistency.
 
+A full Publication is `DONE` only according to `docs/global-publication-pipeline.md`; partial channel execution is not equivalent to completion.
+
 ## 7. Source-of-truth synchronization
 
 This policy is mirrored in the Google Sheets ledger `LifeToLife_Global_Distribution_Account_Ledger` -> `Rules` tab.
 
 The detailed per-platform implementation is canonical in `docs/global-distribution-search-discovery-policy.md` and should be summarized in the Sheets ledger.
+
+The end-to-end publication state machine is canonical in `docs/global-publication-pipeline.md`.
 
 Every future Distribution Agent adapter, Assisted Manual workflow, scheduling workflow, and channel-opening decision must conform to these policies unless the canonical policy is explicitly revised in both GitHub and the Sheets ledger.
