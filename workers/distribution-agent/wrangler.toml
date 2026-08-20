@@ -1,5 +1,5 @@
 name = "lifetolife-distribution-agent"
-main = "worker-v8-trigger.js"
+main = "worker-v8-youtube-inspect.js"
 compatibility_date = "2026-08-14"
 workers_dev = true
 
