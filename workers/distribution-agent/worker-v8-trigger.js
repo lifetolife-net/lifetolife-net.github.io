@@ -1,3 +1,4 @@
+import { fetchNaverBlogRss } from "./naver-blog-rss.js";
 import baseWorker, { WordPressAuthState as BaseWordPressAuthState } from "./worker-v8-hatena.js";
 
 const QUEUE_API = "https://api.github.com/repos/lifetolife-net/lifetolife-net.github.io/contents/distribution/queue?ref=main";
@@ -380,6 +381,24 @@ export default {
   async fetch(request, env, ctx) {
     const path = new URL(request.url).pathname.replace(/\/+$/, "") || "/";
 
+    // NAVER supports an RSS reader but ended the official login-based Blog
+    // writing API in 2020. NEVER route Naver through automatic publishing.
+    if (path === "/v1/naver/blog/cafedo") {
+      if (request.method !== "GET") {
+        return json({ ok: false, error: "Read-only route; Naver Blog publishing requires manual action" }, 405);
+      }
+      if (!authorize(request, env)) return json({ ok: false, error: "Unauthorized" }, 401);
+      const limitValue = new URL(request.url).searchParams.get("limit") || "20";
+      if (!/^(?:[1-9]|[1-4][0-9]|50)$/.test(limitValue)) {
+        return json({ ok: false, error: "limit must be an integer from 1 through 50" }, 400);
+      }
+      try {
+        return json({ ok: true, ...(await fetchNaverBlogRss({ limit: Number(limitValue) })) });
+      } catch (error) {
+        return json({ ok: false, error: publicError(error) }, 502);
+      }
+    }
+
     if (path === "/v1/trigger/run" && request.method === "POST") {
       if (!authorize(request, env)) return json({ ok: false, error: "Unauthorized" }, 401);
       try {
@@ -407,6 +426,10 @@ export default {
         distribution_trigger_schedule: "*/5 * * * * (UTC)",
         distribution_queue: "lifetolife-net/lifetolife-net.github.io:distribution/queue/*.json",
         auto_targets: [...AUTO_TARGETS],
+        naver_blog_read_route: "/v1/naver/blog/cafedo?limit=20",
+        naver_blog_feed: "https://rss.blog.naver.com/cafedo.xml",
+        naver_blog_read_mode: "public_rss_read_only",
+        naver_blog_publish_mode: "assisted_manual_only_official_write_api_discontinued",
         trigger_run_route: "/v1/trigger/run",
         trigger_status_route: "/v1/trigger/status?job_id=...",
       }, response.status);
