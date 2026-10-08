@@ -310,3 +310,14 @@ As of 2026-08-16 KST:
 10. Verify every Auto Publish and Assisted Manual target, record URLs/IDs, start measurement and only then mark the Publication `DONE`.
 11. Complete Pinterest or Hatena only if their existing pending reviews approve.
 12. Keep Snapchat manual unless a confirmed official API allowlist response arrives.
+
+## LTOL site service integration — user decision, 2026-10-09
+
+- The user has decided to include **GGEODI (그거어디?) as a distinct service under LifeToLife**. The app retains the GGEODI name and product identity; the LifeToLife distribution infrastructure remains shared.
+- The existing `https://lifetolife.net/` site currently serves as a guide to BOM writings and must **remain unchanged during this preparatory stage**. The existing BOM pages and Canon links are preserved.
+- The future product landing path is **`https://lifetolife.net/ggeodi/`**. As checked on 2026-10-09 this path returns HTTP 404: **reserved/planned, not a published landing page**. Create and publish it only when the app's real-device core user experience, accurate product copy, and usable installation/trial destination are ready and approved. Then make only minimal necessary site-navigation adjustments with SEO/regression checks.
+- Maintain strict channel identity: **`@ggeodi`** is the LifeToLife Distribution Agent's GGEODI/app promotional YouTube target; **`@dorabom`** is the separate BOM author's readings/video archive and must not be substituted or auto-targeted by the Agent.
+- The user has **two Threads accounts**. Only `@lifetolife_net` is currently identified as a connected Agent publishing account in this ledger. The second account and its purpose are **unverified**; do not infer identities or cross-post automatically.
+- Distribution Agent / Production Runner is a **shared publication engine, not the content owner**. Select product-specific source, destination URL, platform-native package and approved per-platform targets. Do not publish GGEODI promotional content pointing to the unrelated current BOM-focused homepage. Do not publish promises of untested or unreleased GGEODI features.
+- This architecture decision **does not authorize any new live job**. The legacy NUNCHI queue job stays HOLD. The documented P0–P6 publication approval requirements and existing adapter gaps still apply, even if the deployed trigger checks fewer gates technically.
+
