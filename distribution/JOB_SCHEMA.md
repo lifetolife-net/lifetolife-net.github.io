@@ -235,3 +235,29 @@ As of 2026-08-16:
 ## Platform-native rule
 
 The queue is an execution boundary, not a transformation engine. Each package must already conform to the canonical Publication Pipeline and both distribution policies. Do not submit one generic source body to all channels.
+
+## NAVER Blog (cafedo) — read-only link + assisted manual (2026-10-09)
+
+NAVER's official login-based Blog writing Open API ended on 2020-05-06.
+It is **not supported by the auto-publish Worker** and must **not**
+appear inside auto_publish or the trigger's AUTO_TARGETS set.
+
+Supported integration:
+- Read user's existing public articles from HTTPS RSS at https://rss.blog.naver.com/cafedo.xml
+- Authenticated read-only Worker GET endpoint: /v1/naver/blog/cafedo?limit=20 (requires deployed adapter; deployment is separately verified)
+- Optional preparation of an editorially approved draft for **manual posting in NAVER's editor**, followed by permalink readback in the campaign ledger
+
+A future approved publication MAY include an assisted-manual target in its publication plan:
+
+    assisted_manual.naver_blog_cafedo:
+      title: reviewed title
+      body: complete approved article draft
+      related_urls: [verified relevant sources]
+      status: draft_requires_manual_publish
+
+This block is **not an automatic posting instruction**. It must not count as
+published until the user actually posts the content on blog.naver.com/cafedo and
+its canonical public permalink is checked. Keep existing blog articles intact.
+Never confuse NAVER Blog with the separate Google Blogger auto-publish adapter.
+
+Details: docs/naver-blog-integration.md.
