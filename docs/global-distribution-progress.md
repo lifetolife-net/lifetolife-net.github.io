@@ -321,3 +321,14 @@ As of 2026-08-16 KST:
 - Distribution Agent / Production Runner is a **shared publication engine, not the content owner**. Select product-specific source, destination URL, platform-native package and approved per-platform targets. Do not publish GGEODI promotional content pointing to the unrelated current BOM-focused homepage. Do not publish promises of untested or unreleased GGEODI features.
 - This architecture decision **does not authorize any new live job**. The legacy NUNCHI queue job stays HOLD. The documented P0–P6 publication approval requirements and existing adapter gaps still apply, even if the deployed trigger checks fewer gates technically.
 
+## NAVER Blog cafedo RSS integration — 2026-10-09
+
+- User-requested NAVER channel: https://blog.naver.com/cafedo — existing user's BOM reading notes.
+- Official NAVER login-based Blog WRITE API **discontinued 2020-05-06**; no compliant official auto-post route. Do not copy the separate Google **Blogger** adapter or add NAVER to auto_targets.
+- A **public, read-only RSS adapter** is committed at workers/distribution-agent/naver-blog-rss.js and imported into workers/distribution-agent/worker-v8-trigger.js.
+- New source route: authenticated GET /v1/naver/blog/cafedo?limit=20, with limit 1–50, a fixed HTTPS feed https://rss.blog.naver.com/cafedo.xml and canonical blog-post URLs.
+- Native NAVER posting remains **assisted_manual** only: prepare user-approved title/article/source links, final post via user's NAVER editor, then verify actual permalink. Do not count draft as published.
+- 2026-10-09 local smoke: four adapter tests pass, public feed returns **50 recent articles** (not the complete archive). Existing eight auto targets are unchanged.
+- **IMPORTANT DEPLOYMENT GATE:** The production Worker /health did **not yet expose** naver_blog_read_route or naver_blog_read_mode as of 2026-10-09. Therefore **repository source is integrated, but production deployment/authorized route verification is still PENDING**. An unauthenticated GET returns HTTP 401, which is not proof that the new route is deployed.
+- Deploy safely through the existing authorized Worker workflow, verify /health keys and bearer-authenticated GET, and confirm no NAVER write or new automatic publication. No posts modified.
+- Documentation: docs/naver-blog-integration.md.
