@@ -1,6 +1,6 @@
 # LifeToLife Global Distribution Progress
 
-Last updated: 2026-08-16 (KST)
+Last updated: 2026-10-08 (KST)
 
 This document is the canonical progress record for LifeToLife's global distribution and publishing network.
 
@@ -108,11 +108,23 @@ Current Assisted Manual behavior:
 | WordPress.com | `lifetolifeglobal.wordpress.com` | Auto Publish | Verified adapter; current campaign path exposed a hardcoded-draft defect |
 | Bluesky | `@lifetolife-net.bsky.social` | Auto Publish | Verified + Agent integrated |
 | Blogger | LifeToLife / `lifetolife-net` | Auto Publish | Verified + Agent integrated; labels forwarding enhancement pending |
-| YouTube | `@lifetolife_net` | Auto Publish | Verified + Agent integrated |
+| YouTube | **GGEODI** / `@ggeodi` — https://www.youtube.com/@ggeodi | Auto Publish | Verified + Agent integrated (pre-rename; current OAuth channel identity not re-queried) |
 | Facebook | Page `Life to Life` | Auto Publish | Verified + Agent integrated |
 | Instagram | `@lifetolife_net` | Auto Publish | Verified + Agent integrated |
 | Threads | `@lifetolife_net` | Auto Publish | Verified + Agent integrated |
 | Tumblr | `lifetolife-net` | Auto Publish | Verified + Agent integrated + refresh-aware OAuth2 + dedicated tag support |
+
+## YouTube brand/handle correction — 2026-10-08
+
+- **User-confirmed channel name:** GGEODI.
+- **User-confirmed current handle:** `@ggeodi`.
+- **Public channel URL (handle form):** https://www.youtube.com/@ggeodi.
+- **Previous public handle:** `@lifetolife_net` (historical only; do not use as current destination in new copy).
+- **Purpose:** Marketing channel for the GGEODI ("그거어디?") app and possible future independently monetized apps/services; not the BOM author-reading / Canon archive channel.
+- **Separate channel:** `@dorabom` is the BOM metaphysics / author-reading channel and is outside Distribution Agent's YouTube publishing destination.
+- **OAuth safety:** The historical fixed channel ID in `workers/distribution-agent/setup-youtube.sh` is `UCzB_Os4W_7MiVDpGbXfsqxA`. Preserve ID-based checks and existing credentials. Name/handle change alone does not authorize switching YouTube accounts or credentials. The authenticated channel has **not** been rechecked after this rename.
+- **Scope of this change:** Documentation/account-label update only; no video publication, no credential rotation, no Worker redeploy.
+- **Operator note:** Future YouTube platform-native packaging and campaign copy should use GGEODI / `@ggeodi`, while the shared Distribution Agent and other channel identities remain unchanged.
 
 ## Existing pending channels
 
