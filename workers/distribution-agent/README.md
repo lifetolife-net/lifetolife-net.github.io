@@ -38,6 +38,17 @@ The canonical 2026 rollout target is tracked in:
 - `docs/global-distribution-candidates-2026.md`
 - Google Sheets `LifeToLife_Global_Distribution_Account_Ledger`
 
+## YouTube destination identity (updated 2026-10-08)
+
+- **Display name:** GGEODI
+- **Current handle:** `@ggeodi`
+- **Channel link:** https://www.youtube.com/@ggeodi
+- **Former LTOL handle:** `@lifetolife_net` (historical; do not use in new promotional metadata)
+- **Role:** Promotion of the GGEODI ("그거어디?") app and future non-BOM apps/services. This is **not** the BOM author-reading YouTube channel `@dorabom`.
+- **Original verified YouTube channel ID (pre-rename):** `UCzB_Os4W_7MiVDpGbXfsqxA` in `setup-youtube.sh`. Retain this stable-ID safeguard and existing OAuth credentials. A read-only authenticated channel check is still required before asserting post-rename identity verification.
+- **Branding vs service name:** The Worker, API endpoint, repository, and other platform accounts remain LifeToLife; this rename updates only the YouTube public-facing identity.
+- **No operational action from this documentation change:** Do not upload, publish, rotate credentials, or redeploy solely due to the change in display name/handle.
+
 ## Common API
 
 `POST /v1/publish`
